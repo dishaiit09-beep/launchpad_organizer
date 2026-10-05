@@ -98,6 +98,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
+import { OpportunitySheets } from "./OpportunitySheets";
 import { Editor, Choice } from "./Editor";
 import {
   categories,
@@ -390,7 +391,7 @@ export default function Workspace({
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.email]);
   useEffect(() => {
     void load();
     const saved = localStorage.getItem("launchpad-timezone");
@@ -405,6 +406,13 @@ export default function Workspace({
     };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+  const sheetSaved = useCallback((record: Item) => {
+    setItems((previous) =>
+      previous.some((item) => item.id === record.id)
+        ? previous.map((item) => (item.id === record.id ? record : item))
+        : [record, ...previous],
+    );
   }, []);
   async function save(kind: Kind, data: Data, id?: string) {
     const parsed = recordSchema.safeParse({ kind, data });
@@ -1004,6 +1012,17 @@ export default function Workspace({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          {user && !loading && !loadError && (
+            <div hidden={view !== "opportunities" || !!query}>
+              <OpportunitySheets
+                items={opportunities}
+                zone={zone}
+                account={user.email}
+                onSaved={sheetSaved}
+                onOpen={setDetailId}
+              />
+            </div>
+          )}
           {loadError ? (
             <div className="error-panel" role="alert">
               <strong>Your workspace couldn’t load.</strong>
@@ -1237,38 +1256,40 @@ export default function Workspace({
                 </>
               )}
               {view === "opportunities" && (
-                <section className="panel">
-                  <div className="filterbar">
-                    <div className="filter-group">
-                      <Choice
-                        label="Opportunity type filter"
-                        value={category}
-                        options={["All types", ...categories]}
-                        onChange={setCategory}
-                      />
-                      <Choice
-                        label="Application stage filter"
-                        value={stage}
-                        options={["All stages", ...stages]}
-                        onChange={setStage}
-                      />
+                <>
+                  <section className="panel">
+                    <div className="filterbar">
+                      <div className="filter-group">
+                        <Choice
+                          label="Opportunity type filter"
+                          value={category}
+                          options={["All types", ...categories]}
+                          onChange={setCategory}
+                        />
+                        <Choice
+                          label="Application stage filter"
+                          value={stage}
+                          options={["All stages", ...stages]}
+                          onChange={setStage}
+                        />
+                      </div>
+                      <div className="filter-group">
+                        <span>{filtered.length} opportunities</span>
+                        <Choice
+                          label="Sort opportunities"
+                          value={sort}
+                          options={[
+                            "Soonest deadline",
+                            "Priority",
+                            "Recently added",
+                          ]}
+                          onChange={setSort}
+                        />
+                      </div>
                     </div>
-                    <div className="filter-group">
-                      <span>{filtered.length} opportunities</span>
-                      <Choice
-                        label="Sort opportunities"
-                        value={sort}
-                        options={[
-                          "Soonest deadline",
-                          "Priority",
-                          "Recently added",
-                        ]}
-                        onChange={setSort}
-                      />
-                    </div>
-                  </div>
-                  {opportunityTable(filtered)}
-                </section>
+                    {opportunityTable(filtered)}
+                  </section>
+                </>
               )}
               {view === "applications" && (
                 <Tabs defaultValue="active">

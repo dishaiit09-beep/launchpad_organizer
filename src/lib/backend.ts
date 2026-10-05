@@ -160,3 +160,62 @@ export async function deleteRecord(id: string): Promise<void> {
   if (error) throw explain(error);
   if (!data) throw new Error("The entry was not found in your workspace.");
 }
+
+// Limit large Excel pastes to four database requests at a time.
+let sheetRequests = 0;
+const sheetWaiters: (() => void)[] = [];
+async function acquireSheetSlot() {
+  if (sheetRequests < 4) {
+    sheetRequests++;
+    return;
+  }
+  await new Promise<void>((resolve) => sheetWaiters.push(resolve));
+}
+function releaseSheetSlot() {
+  const next = sheetWaiters.shift();
+  if (next) next();
+  else sheetRequests--;
+}
+// Spreadsheet rows use a stable ID, so a retry cannot create duplicates.
+export async function saveSheetRecord(data: Data, id: string): Promise<Item> {
+  const entry = recordSchema.parse({ kind: "opportunity", data });
+  await acquireSheetSlot();
+  try {
+    const user = await currentUser();
+    const { data: row, error } = await client()
+      .from("records")
+      .upsert({ id, ...entry, owner_id: user.id }, { onConflict: "id" })
+      .select(columns)
+      .single();
+    if (error) throw explain(error);
+    return decode(row as Row);
+  } finally {
+    releaseSheetSlot();
+  }
+}
+
+export async function loadSheetPreferences(): Promise<Record<
+  string,
+  string[]
+> | null> {
+  const user = await currentUser();
+  const value = user.user_metadata.launchpadSheets;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      ([key, cols]) =>
+        key.length <= 100 &&
+        Array.isArray(cols) &&
+        cols.length <= 50 &&
+        cols.every((c) => typeof c === "string" && c.length <= 100),
+    ),
+  ) as Record<string, string[]>;
+}
+export async function saveSheetPreferences(
+  sheets: Record<string, string[]>,
+): Promise<void> {
+  const { error } = await client().auth.updateUser({
+    data: { launchpadSheets: sheets },
+  });
+  if (error) throw new Error(error.message);
+}

@@ -1,0 +1,165 @@
+.opportunity-sheets {
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.sheet-heading {
+  padding: 22px 24px 12px;
+}
+.sheet-heading h2 {
+  font-size: 19px;
+  font-weight: 650;
+}
+.sheet-heading p,
+.sheet-hint,
+.sheet-bottom span {
+  color: #737386;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.sheet-tabs {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  padding: 8px 24px;
+  border-bottom: 1px solid #eee;
+}
+.sheet-tabs button {
+  white-space: nowrap;
+  border-radius: 8px;
+  padding: 8px 15px;
+  background: #f5f5fa;
+  color: #555;
+}
+.sheet-tabs button[aria-selected="true"] {
+  background: #ede8ff;
+  color: #6650b8;
+  font-weight: 600;
+}
+.sheet-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 24px 8px;
+}
+.sheet-tools form {
+  display: flex;
+  gap: 6px;
+}
+.sheet-tools input {
+  border: 1px solid #dedee9;
+  border-radius: 7px;
+  padding: 8px 10px;
+  min-width: 140px;
+  max-width: 260px;
+  font-size: 13px;
+}
+.sheet-hint {
+  padding: 0 24px 14px;
+}
+.sheet-scroll {
+  overflow: auto;
+  max-height: 560px;
+}
+.sheet-table {
+  border-collapse: collapse;
+  min-width: 1450px;
+  width: 100%;
+  font-size: 13px;
+}
+.sheet-table th {
+  position: sticky;
+  top: 0;
+  background: #f6f5fb;
+  text-align: left;
+  color: #6a647b;
+  font-weight: 600;
+  z-index: 1;
+  padding: 11px 10px;
+  border: 1px solid #e8e7ef;
+}
+.sheet-table td {
+  border: 1px solid #e8e7ef;
+  padding: 0;
+}
+.sheet-table td:first-child {
+  padding: 8px 10px;
+  color: #888;
+  text-align: center;
+}
+.sheet-table input,
+.sheet-table select {
+  width: 100%;
+  min-width: 150px;
+  padding: 10px 9px;
+  background: transparent;
+  outline: none;
+  border: 0;
+  font: inherit;
+  min-height: 42px;
+}
+.sheet-table input[type="datetime-local"] {
+  min-width: 215px;
+}
+.sheet-table input:focus,
+.sheet-table select:focus {
+  box-shadow: inset 0 0 0 2px #8d79d6;
+  background: #faf8ff;
+}
+.sheet-table td:nth-child(2) input {
+  min-width: 220px;
+}
+.sheet-table tr:nth-child(even) {
+  background: #fcfcfe;
+}
+.sheet-save {
+  min-width: 160px;
+  max-width: 230px;
+  padding: 8px 12px !important;
+  font-size: 12px;
+}
+.sheet-save button {
+  display: block;
+  color: #765bb7;
+  text-decoration: underline;
+  margin-top: 3px;
+}
+.sheet-bottom {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 15px 24px;
+  flex-wrap: wrap;
+}
+.sheet-empty {
+  padding: 28px 24px;
+  color: #777;
+}
+@media (max-width: 640px) {
+  .sheet-tools,
+  .sheet-heading,
+  .sheet-tabs,
+  .sheet-bottom {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .sheet-tools form {
+    width: 100%;
+  }
+  .sheet-tools input {
+    flex: 1;
+    min-width: 0;
+  }
+  .sheet-hint {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+.sheet-rename {
+  margin-left: 8px;
+  color: #8d79d6;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.sheet-rename:hover {
+  background: #eae4fc;
+}

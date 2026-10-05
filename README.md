@@ -38,8 +38,16 @@ npm run build
 | `supabase/schema.sql`    | Database table, account privacy policies and timestamps        |
 | `tests/privacy.test.mjs` | Runs the database policies against a local PostgreSQL engine   |
 
-Edit the title in `index.html` and the credit in `src/Workspace.tsx` to change branding. 
+Edit the title in `index.html` and the credit in `src/Workspace.tsx` to change branding.
 
 ## Practical limits
 
 Deadlines appear inside the app; it does not send email or push reminders. Documents are stored as links, rather than uploaded files. The installable web app needs an internet connection for private records. Google credentials and live cloud login cannot be verified until your accounts are configured.
+
+## Opportunity sheets
+
+Open **Opportunities** to type directly into a spreadsheet. Use **+ Sheet** to group opportunities and **+ Column** for details such as POC email or LOR. Rename a sheet with **Rename sheet**, or an extra column with its pencil button.
+
+Every named row saves automatically after a short pause. **Enter** moves down and **Tab** moves between cells. Copy rows from Excel and paste into the starting cell; columns follow the table order. For pasted dates, use `YYYY-MM-DD` (due at 23:59 in the row timezone) or `YYYY-MM-DDTHH:mm`. Paste up to 500 rows at a time.
+
+Wait for **Saved** before closing. Invalid rows remain visible with an error; correct them or retry after a connection failure. Sheet settings and saved opportunities sync with your Google account. The sheets use the existing opportunity records, so calendar deadlines and application stages stay connected. No new SQL setup is needed.

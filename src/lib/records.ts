@@ -63,6 +63,10 @@ const date = z
 export const dataSchema = z
   .object({
     title: z.string().trim().min(1, "A title is required").max(180),
+    sheet: z.string().max(100).optional(),
+    customFields: z
+      .record(z.string().max(100), z.string().max(10000))
+      .optional(),
     category: str,
     organization: str,
     status: str,
