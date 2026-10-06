@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "./components/ui/button";
@@ -15,6 +16,9 @@ import {
   type Data,
   type Item,
   type Kind,
+  dayKey,
+  taskOnDay,
+  taskInWeek,
 } from "./lib/records";
 import "./sheets.css";
 
@@ -99,6 +103,9 @@ export function RecordSheets({
   account,
   kind = "opportunity",
   defaultDeadline,
+  dateWindow,
+  completionFilter = "All",
+  portalTarget,
   onSaved,
   onOpen,
 }: {
@@ -107,6 +114,14 @@ export function RecordSheets({
   account: string;
   kind?: SheetKind;
   defaultDeadline?: string;
+  dateWindow?: {
+    mode: "daily" | "weekly";
+    start: string;
+    end: string;
+    today: string;
+  };
+  portalTarget?: HTMLElement | null;
+  completionFilter?: string;
   onSaved: (item: Item) => void;
   onOpen: (id: string) => void;
 }) {
@@ -347,13 +362,33 @@ export function RecordSheets({
       ...rows.map((r) => r.data.sheet || "General"),
     ]),
   ];
-  const visibleRows = rows.filter(
-    (r) => (r.data.sheet || "General") === active,
-  );
+  const sheetRows = rows.filter((r) => (r.data.sheet || "General") === active);
+  const visibleRows = sheetRows.filter((row) => {
+    if (kind !== "task" || row.saved === "") return true;
+    if (completionFilter === "Open" && row.data.done) return false;
+    if (completionFilter === "Done" && !row.data.done) return false;
+    if (!dateWindow) return true;
+    return dateWindow.mode === "daily"
+      ? taskOnDay(row.data, dateWindow.start, zone)
+      : taskInWeek(row.data, dateWindow.start, dateWindow.end, zone);
+  });
+  function carried(row: Row) {
+    if (kind !== "task" || !dateWindow || row.data.done || !row.data.deadline)
+      return false;
+    const carryDay =
+      dateWindow.mode === "daily"
+        ? dateWindow.start
+        : dateWindow.today < dateWindow.start
+          ? dateWindow.start
+          : dateWindow.today > dateWindow.end
+            ? dateWindow.end
+            : dateWindow.today;
+    return dayKey(row.data.deadline, zone) < carryDay;
+  }
   const extraColumns = [
     ...new Set([
       ...(preferences[active] || []),
-      ...visibleRows.flatMap((r) => Object.keys(r.data.customFields || {})),
+      ...sheetRows.flatMap((r) => Object.keys(r.data.customFields || {})),
     ]),
   ];
   const columns: Column[] = [
@@ -372,7 +407,7 @@ export function RecordSheets({
     const updated = { ...preferences, [next]: extraColumns };
     delete updated[active];
     remember(updated);
-    visibleRows.forEach((row) =>
+    sheetRows.forEach((row) =>
       edit(row.id, { key: "sheet", label: "Sheet" }, next),
     );
     setActive(next);
@@ -390,7 +425,7 @@ export function RecordSheets({
       ...preferences,
       [active]: extraColumns.map((c) => (c === old ? next : c)),
     });
-    visibleRows.forEach((row) => {
+    sheetRows.forEach((row) => {
       replace((prev) =>
         prev.map((r) =>
           r.id === row.id
@@ -525,7 +560,7 @@ export function RecordSheets({
           data: {
             ...row.data,
             ...(kind === "task"
-              ? { done }
+              ? { done, completedOn: done ? new Date().toISOString() : "" }
               : {
                   status: done ? "Completed" : "In progress",
                   progress: done ? 100 : 0,
@@ -586,12 +621,23 @@ export function RecordSheets({
     });
     changed.filter((r) => !r.error).forEach((r) => queue(r.id));
   }
-  return (
+  const content = (
     <section className="panel opportunity-sheets">
       <div className="sheet-heading">
         <div>
-          <h2>{copy.title}</h2>
-          <p>Type directly. Changes save after a short pause. {copy.hint}</p>
+          <h2>
+            {kind === "task" && dateWindow
+              ? dateWindow.mode === "daily"
+                ? `Daily task database · ${dateWindow.start}`
+                : `Weekly task database · ${dateWindow.start} to ${dateWindow.end}`
+              : copy.title}
+          </h2>
+          <p>
+            Type directly. Changes save after a short pause.{" "}
+            {dateWindow
+              ? "Only tasks for this selected date range appear here. Unfinished earlier tasks carry forward in red; their original due date stays visible."
+              : copy.hint}
+          </p>
         </div>
       </div>
       <div className="sheet-tabs" role="tablist" aria-label={copy.label}>
@@ -639,7 +685,7 @@ export function RecordSheets({
             )
               return;
             remember({ ...preferences, [active]: [...extraColumns, name] });
-            visibleRows.forEach((row) =>
+            sheetRows.forEach((row) =>
               edit(row.id, { key: `custom:${name}`, label: name }, ""),
             );
             setColumnName("");
@@ -715,10 +761,22 @@ export function RecordSheets({
                     ? undefined
                     : completed(row)
                       ? "sheet-row-completed"
-                      : "sheet-row-open"
+                      : carried(row)
+                        ? "sheet-row-overdue"
+                        : "sheet-row-open"
                 }
               >
-                <td>{rowIndex + 1}</td>
+                <td>
+                  {rowIndex + 1}
+                  {carried(row) && (
+                    <span
+                      className="carry-badge"
+                      title={`Originally due ${dayKey(row.data.deadline!, zone)}`}
+                    >
+                      Overdue
+                    </span>
+                  )}
+                </td>
                 {columns.map((column, columnIndex) => (
                   <td key={column.key}>
                     {column.options ? (
@@ -845,6 +903,9 @@ export function RecordSheets({
       </div>
     </section>
   );
+  // The controller stays mounted while its table moves between date tabs.
+  // This preserves draft cells and pending saves during navigation.
+  return portalTarget ? createPortal(content, portalTarget) : content;
 }
 
 // Keep the existing opportunity entry point for older callers.

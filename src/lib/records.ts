@@ -99,6 +99,7 @@ export const dataSchema = z
       .optional(),
     lorCount: z.number().int().min(0).max(10).optional(),
     appliedOn: date,
+    completedOn: date,
     followupAt: date,
     email: z.union([z.literal(""), z.string().email()]).optional(),
     phone: str,
@@ -238,4 +239,46 @@ export function preparationProgress(item: Item) {
     : item.data.status === "Prepared"
       ? 100
       : 0;
+}
+
+// A carried task keeps its original due date, so its lateness stays visible.
+export function taskOnDay(data: Data, day: string, zone: string): boolean {
+  if (!data.deadline) return false;
+  const due = dayKey(data.deadline, zone);
+  return (
+    due === day ||
+    (!data.done && due < day) ||
+    (!!data.done &&
+      !!data.completedOn &&
+      dayKey(data.completedOn, zone) === day)
+  );
+}
+export function taskInWeek(
+  data: Data,
+  start: string,
+  end: string,
+  zone: string,
+): boolean {
+  if (!data.deadline) return false;
+  const due = dayKey(data.deadline, zone);
+  const completed =
+    data.done && data.completedOn ? dayKey(data.completedOn, zone) : "";
+  return (
+    (due >= start && due <= end) ||
+    (!data.done && due < start) ||
+    (!!completed && completed >= start && completed <= end)
+  );
+}
+export function taskWeekDay(
+  data: Data,
+  start: string,
+  end: string,
+  today: string,
+  zone: string,
+): string {
+  if (!data.deadline) return "";
+  if (data.done && data.completedOn) return dayKey(data.completedOn, zone);
+  const due = dayKey(data.deadline, zone);
+  const carryDay = today < start ? start : today > end ? end : today;
+  return !data.done && due < carryDay ? carryDay : due;
 }

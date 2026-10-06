@@ -112,6 +112,8 @@ import {
   isFinished,
   preparationProgress,
   recordSchema,
+  taskOnDay,
+  taskWeekDay,
   type Item,
   type Kind,
   type Data,
@@ -372,7 +374,23 @@ export default function Workspace({
   const pendingIds = useRef(new Set<string>());
   const signedOut = !user;
   const detail = items.find((x) => x.id === detailId);
-  const today = dayKey(new Date(), zone);
+  const [clock, setClock] = useState(() => Date.now());
+  const [taskSheetTarget, setTaskSheetTarget] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const today = dayKey(new Date(clock), zone);
+  const previousToday = useRef(today);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    if (previousToday.current !== today) {
+      const old = previousToday.current;
+      setPlannerDate((selected) => (selected === old ? today : selected));
+      previousToday.current = today;
+    }
+  }, [today]);
   const navigate = (v: View) => {
     setView(v);
     setQuery("");
@@ -415,6 +433,15 @@ export default function Workspace({
     );
   }, []);
   async function save(kind: Kind, data: Data, id?: string) {
+    if (
+      kind === "task" &&
+      data.done !== (items.find((item) => item.id === id)?.data.done || false)
+    ) {
+      data = {
+        ...data,
+        completedOn: data.done ? new Date().toISOString() : "",
+      };
+    }
     const parsed = recordSchema.safeParse({ kind, data });
     if (!parsed.success) throw new Error(parsed.error.issues[0].message);
     if (!user) throw new Error("Sign in with Google to save your work.");
@@ -616,7 +643,7 @@ export default function Workspace({
       <div className="task-list">
         {list.map((item) => (
           <div
-            className={`task-row ${item.data.done ? "completed" : ""}`}
+            className={`task-row ${item.data.done ? "completed" : item.data.deadline && dayKey(item.data.deadline, zone) < (view === "planner" ? plannerDate : today) ? "carried-task" : ""}`}
             key={item.id}
           >
             <button
@@ -634,6 +661,14 @@ export default function Workspace({
               onClick={() => setDetailId(item.id)}
             >
               <strong>{item.data.title}</strong>
+              {!item.data.done &&
+                item.data.deadline &&
+                dayKey(item.data.deadline, zone) <
+                  (view === "planner" ? plannerDate : today) && (
+                  <span className="carry-badge">
+                    Overdue · due {dateLabel(item.data.deadline, zone)}
+                  </span>
+                )}
               <small>
                 {items.find((x) => x.id === item.data.linkedId)?.data.title ||
                   "Personal task"}
@@ -824,8 +859,8 @@ export default function Workspace({
       )
     );
   }
-  const selectedDaily = tasks.filter(
-      (x) => x.data.deadline && dayKey(x.data.deadline, zone) === plannerDate,
+  const selectedDaily = tasks.filter((x) =>
+      taskOnDay(x.data, plannerDate, zone),
     ),
     undatedTasks = tasks.filter((x) => !x.data.deadline);
   const weekdayIndex =
@@ -1038,17 +1073,21 @@ export default function Workspace({
                   onOpen={setDetailId}
                 />
               </div>
-              <div
-                hidden={
-                  view !== "planner" || plannerTab === "timetable" || !!query
-                }
-              >
+              <div hidden>
                 <RecordSheets
                   kind="task"
                   items={tasks}
                   zone={zone}
                   account={user.email}
                   defaultDeadline={wallTimeToISO(`${plannerDate}T23:59`, zone)}
+                  dateWindow={{
+                    mode: plannerTab === "weekly" ? "weekly" : "daily",
+                    start: plannerTab === "weekly" ? weekStart : plannerDate,
+                    end: plannerTab === "weekly" ? weekDays[6] : plannerDate,
+                    today,
+                  }}
+                  portalTarget={taskSheetTarget}
+                  completionFilter={plannerTab === "daily" ? taskFilter : "All"}
                   onSaved={sheetSaved}
                   onOpen={setDetailId}
                 />
@@ -1556,6 +1595,10 @@ export default function Workspace({
                             onChange={setTaskFilter}
                           />
                         </div>
+                        <div
+                          ref={setTaskSheetTarget}
+                          className="daily-database-slot"
+                        />
                         {taskRows(visibleTasks(selectedDaily))}
                         <div className="planner-subheading">
                           <h3>Unscheduled</h3>
@@ -1639,6 +1682,10 @@ export default function Workspace({
                         This week
                       </Button>
                     </div>
+                    <div
+                      ref={setTaskSheetTarget}
+                      className="weekly-database-slot"
+                    />
                     <div className="weekly-grid">
                       {weekDays.map((day, i) => (
                         <section
@@ -1653,11 +1700,17 @@ export default function Workspace({
                             .filter(
                               (x) =>
                                 x.data.deadline &&
-                                dayKey(x.data.deadline, zone) === day,
+                                taskWeekDay(
+                                  x.data,
+                                  weekStart,
+                                  weekDays[6],
+                                  today,
+                                  zone,
+                                ) === day,
                             )
                             .map((x) => (
                               <div
-                                className={`week-task ${x.data.done ? "completed" : ""}`}
+                                className={`week-task ${x.data.done ? "completed" : x.data.deadline && dayKey(x.data.deadline, zone) < day ? "carried-task" : ""}`}
                                 key={x.id}
                               >
                                 <button
@@ -1677,6 +1730,14 @@ export default function Workspace({
                                   onClick={() => setDetailId(x.id)}
                                 >
                                   {x.data.title}
+                                  {!x.data.done &&
+                                    x.data.deadline &&
+                                    dayKey(x.data.deadline, zone) < day && (
+                                      <span className="carry-badge">
+                                        Overdue · due{" "}
+                                        {dateLabel(x.data.deadline, zone)}
+                                      </span>
+                                    )}
                                 </button>
                               </div>
                             ))}

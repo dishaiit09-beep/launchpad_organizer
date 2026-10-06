@@ -57,3 +57,9 @@ Wait for **Saved** before closing. Invalid rows remain visible with an error; co
 **Projects** and **Daily & weekly plan** now have the same spreadsheet editor. Entries save as normal projects or tasks, so their deadlines, project cards, daily lists, weekly lists and calendar use the same records. Each section has its own sheets and extra columns.
 
 New task rows are due at 23:59 on the planner’s selected date; change **Due date** for another day. **Mark complete** turns a row green and saves its completion. Press **Completed** again to reopen it. The daily list initially shows both pending and completed tasks; its status filter can show either. The daily and weekly completion buttons update the same task. Open a project’s **Details** and choose **Add task for this project** to create a linked task using the existing editor.
+
+## Daily dates, weekly dates and unfinished tasks
+
+The task database is inside each planner tab: **Daily to-do** filters the selected day; **Weekly to-do** filters the selected Monday–Sunday week. Change the day or week controls to see that date range. Tasks without a date stay in the unscheduled list.
+
+Unfinished tasks from earlier days automatically appear in the next day's plan with a red **Overdue** mark. They continue to appear until completed. The original due date stays saved, so lateness remains visible and the app does not create duplicate tasks. Completing a carried task keeps it green on its completion day and stops it carrying into later days. In the weekly grid, an earlier unfinished task appears on today (or the first day of a future selected week). If the planner is left open at midnight, a view following today advances to the new day.
