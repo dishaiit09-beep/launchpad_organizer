@@ -42,7 +42,7 @@ Edit the title in `index.html` and the credit in `src/Workspace.tsx` to change b
 
 ## Practical limits
 
-Deadlines appear inside the app; it does not send email or push reminders. Documents are stored as links, rather than uploaded files. The installable web app needs an internet connection for private records. Google credentials and live cloud login cannot be verified until your accounts are configured.
+Deadline reminders appear inside the app 3 days and 1 day before the due date. Optional browser notifications require permission and an open app; there are no background push or email reminders. Documents are stored as links, rather than uploaded files. The installable web app needs an internet connection for private records. Google credentials and live cloud login cannot be verified until your accounts are configured.
 
 ## Opportunity sheets
 
@@ -63,3 +63,18 @@ New task rows are due at 23:59 on the planner’s selected date; change **Due da
 The task database is inside each planner tab: **Daily to-do** filters the selected day; **Weekly to-do** filters the selected Monday–Sunday week. Change the day or week controls to see that date range. Tasks without a date stay in the unscheduled list.
 
 Unfinished tasks from earlier days automatically appear in the next day's plan with a red **Overdue** mark. They continue to appear until completed. The original due date stays saved, so lateness remains visible and the app does not create duplicate tasks. Completing a carried task keeps it green on its completion day and stops it carrying into later days. In the weekly grid, an earlier unfinished task appears on today (or the first day of a future selected week). If the planner is left open at midnight, a view following today advances to the new day.
+
+
+## Search, sort, undo and files
+
+Every opportunity, project and dated daily/weekly task database has **Search sheet**, column sorting, ascending/descending order, **Undo · Ctrl+Z** (Cmd+Z on Mac), and CSV/Excel import-export. Undo covers the last 100 row-edit operations in the current session, including paste, completion, subtasks and imports. Wait while a save is in flight. Sheet/column renaming and changes made outside the table are not part of this history. Import undo removes the imported records; undoing recurring completion does not remove an already created next occurrence.
+
+**Import CSV / Excel** accepts `.csv`, `.tsv`, `.xlsx` up to 5 MB and 500 entries per file. XLSX uses the first worksheet; import other worksheets separately. The first row must contain headers matching table labels or field keys (e.g. `Task` or `title`, `Due date` or `deadline`). Extra headers become custom columns. Dates use `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm`; an optional `Timezone` column preserves each row's timezone. The whole file is validated before rows are appended to the selected sheet. This creates new records; it does not merge with existing entries. Dated task imports appear on their appropriate daily/weekly dates.
+
+Export downloads the current visible sheet rows, respecting the selected date range, completion filter, search and sorting. Choose **Export CSV** for a text spreadsheet or **Export Excel** for XLSX. Task subtasks and completion are included. Export each named sheet separately. These files contain table fields, not a full account backup.
+
+## Repeat tasks and subtasks
+
+In either task database, choose **Repeat → Daily / Weekly** and enter a due date. Completing a task creates the next occurrence at the same local time, with unchecked subtasks. Only one next occurrence is created per completed task/date, even when retried. An unfinished occurrence carries forward in red as usual; repeats advance when completed, rather than generating a backlog automatically. The task editor also has **Repeat task** and a subtask list.
+
+In the **Subtasks** column, type a step and press Enter; tick the checkbox to complete it, or × to remove it. The counter updates and all changes autosave across daily and weekly views. Completing subtasks does not automatically complete their parent task.

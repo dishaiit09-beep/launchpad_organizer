@@ -314,6 +314,30 @@ export function Editor({
       {["task", "test", "block"].includes(kind) &&
         choice("linkedId", "Link to opportunity, project or prep", linked)}
       {kind === "task" && field("duration", "Estimated minutes", "number")}
+      {kind === "task" &&
+        choice("repeat", "Repeat task", ["None", "Daily", "Weekly"])}
+      {kind === "task" && (
+        <label className="field full">
+          <span>Subtasks — one per line</span>
+          <Textarea
+            value={(data.subtasks || []).map((x) => x.title).join("\n")}
+            onChange={(e) =>
+              set(
+                "subtasks",
+                e.target.value
+                  .split("\n")
+                  .filter((x) => x.trim())
+                  .map((title) => ({
+                    title: title.trim(),
+                    done:
+                      data.subtasks?.find((x) => x.title === title.trim())
+                        ?.done || false,
+                  })),
+              )
+            }
+          />
+        </label>
+      )}
       {kind === "project" && field("progress", "Progress (%)", "number")}
       {kind !== "task" &&
         kind !== "block" &&

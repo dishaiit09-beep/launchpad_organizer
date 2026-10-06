@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "./components/ui/button";
 import {
   saveSheetRecord,
+  deleteRecord,
   loadSheetPreferences,
   saveSheetPreferences,
 } from "./lib/backend";
@@ -21,6 +22,7 @@ import {
   taskInWeek,
 } from "./lib/records";
 import "./sheets.css";
+import { readTableFile, downloadTable } from "./lib/tableFiles";
 
 type Column = { key: string; label: string; type?: string; options?: string[] };
 const opportunityColumns: Column[] = [
@@ -55,6 +57,7 @@ const taskColumns: Column[] = [
   { key: "priority", label: "Priority", options: ["High", "Medium", "Low"] },
   { key: "duration", label: "Time (minutes)", type: "number" },
   { key: "notes", label: "Notes" },
+  { key: "repeat", label: "Repeat", options: ["None", "Daily", "Weekly"] },
 ];
 const sheetCopy = {
   opportunity: {
@@ -108,6 +111,7 @@ export function RecordSheets({
   portalTarget,
   onSaved,
   onOpen,
+  onRemoved,
 }: {
   items: Item[];
   zone: string;
@@ -124,6 +128,7 @@ export function RecordSheets({
   completionFilter?: string;
   onSaved: (item: Item) => void;
   onOpen: (id: string) => void;
+  onRemoved?: (ids: string[]) => void;
 }) {
   const copy = sheetCopy[kind];
   const baseColumns =
@@ -163,6 +168,15 @@ export function RecordSheets({
   const [active, setActive] = useState("General");
   const [sheetName, setSheetName] = useState("");
   const [columnName, setColumnName] = useState("");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("");
+  const [direction, setDirection] = useState("asc");
+  const [fileStatus, setFileStatus] = useState("");
+  const [undoBusy, setUndoBusy] = useState(false);
+  const history = useRef<
+    { before: Map<string, Data | null>; after: Map<string, Data> }[]
+  >([]);
+  const [historyCount, setHistoryCount] = useState(0);
   const [rows, setRows] = useState<Row[]>(() => items.map(rowFromItem));
   const rowsRef = useRef(rows);
   const savedCallback = useRef(onSaved);
@@ -172,6 +186,71 @@ export function RecordSheets({
   function replace(fn: (previous: Row[]) => Row[]) {
     rowsRef.current = fn(rowsRef.current);
     if (mounted.current) setRows(rowsRef.current);
+  }
+  function mutate(fn: (previous: Row[]) => Row[]) {
+    const before = new Map(rowsRef.current.map((r) => [r.id, r.data]));
+    replace(fn);
+    const changed = rowsRef.current.filter(
+      (r) => fingerprint(r.data) !== JSON.stringify(before.get(r.id)),
+    );
+    if (changed.length) {
+      history.current.push({
+        before: new Map(changed.map((r) => [r.id, before.get(r.id) || null])),
+        after: new Map(changed.map((r) => [r.id, r.data])),
+      });
+      if (history.current.length > 100) history.current.shift();
+      setHistoryCount(history.current.length);
+    }
+  }
+  async function undo() {
+    if (undoBusy || rowsRef.current.some((r) => r.busy)) return;
+    const step = history.current[history.current.length - 1];
+    if (!step) return;
+    setUndoBusy(true);
+    try {
+      const removed: string[] = [];
+      for (const [id, before] of step.before) {
+        clearTimeout(timers.current.get(id));
+        timers.current.delete(id);
+        const current = rowsRef.current.find((r) => r.id === id);
+        if (!current) continue;
+        if (before === null) {
+          if (current.saved) await deleteRecord(id);
+          removed.push(id);
+          replace((prev) => prev.filter((r) => r.id !== id));
+          onRemoved?.([id]);
+        } else {
+          // Restore only fields changed by this operation, preserving remote completion.
+          const after = step.after.get(id)!;
+          const data = { ...current.data };
+          for (const key of new Set([
+            ...Object.keys(before),
+            ...Object.keys(after),
+          ])) {
+            const k = key as keyof Data;
+            if (JSON.stringify(before[k]) !== JSON.stringify(after[k]))
+              Object.assign(data, { [k]: before[k] });
+          }
+          replace((prev) =>
+            prev.map((r) =>
+              r.id === id
+                ? { ...r, data, version: r.version + 1, error: "" }
+                : r,
+            ),
+          );
+          queue(id, 0);
+        }
+      }
+      replace((prev) => prev.filter((r) => !removed.includes(r.id)));
+      onRemoved?.(removed);
+      history.current.pop();
+      setHistoryCount(history.current.length);
+      setFileStatus("Last edit undone. Restored values save automatically.");
+    } catch (e) {
+      setFileStatus(e instanceof Error ? e.message : "Undo failed. Retry.");
+    } finally {
+      setUndoBusy(false);
+    }
   }
   useEffect(() => {
     mounted.current = true;
@@ -363,7 +442,7 @@ export function RecordSheets({
     ]),
   ];
   const sheetRows = rows.filter((r) => (r.data.sheet || "General") === active);
-  const visibleRows = sheetRows.filter((row) => {
+  const datedRows = sheetRows.filter((row) => {
     if (kind !== "task" || row.saved === "") return true;
     if (completionFilter === "Open" && row.data.done) return false;
     if (completionFilter === "Done" && !row.data.done) return false;
@@ -395,6 +474,31 @@ export function RecordSheets({
     ...baseColumns,
     ...extraColumns.map((key) => ({ key: `custom:${key}`, label: key })),
   ];
+  const visibleRows = datedRows
+    .filter(
+      (row) =>
+        !search.trim() ||
+        !row.saved ||
+        JSON.stringify(row.data)
+          .toLowerCase()
+          .includes(search.trim().toLowerCase()),
+    )
+    .sort((a, b) => {
+      if (!sort || !a.saved || !b.saved) return 0;
+      const column = columns.find((c) => c.key === sort)!;
+      const av = value(a, column),
+        bv = value(b, column);
+      if (!av) return bv ? 1 : 0;
+      if (!bv) return -1;
+      const result =
+        column.type === "number"
+          ? Number(av) - Number(bv)
+          : av.localeCompare(bv, undefined, {
+              numeric: true,
+              sensitivity: "base",
+            });
+      return direction === "asc" ? result : -result;
+    });
   function renameSheet() {
     const next = window.prompt("New sheet name", active)?.trim();
     if (
@@ -474,7 +578,7 @@ export function RecordSheets({
   }
   function addRow() {
     const row = blank();
-    replace((prev) => [...prev, row]);
+    mutate((prev) => [...prev, row]);
     setTimeout(() => document.getElementById(`sheet-${row.id}-0`)?.focus(), 0);
     return row;
   }
@@ -498,6 +602,12 @@ export function RecordSheets({
       return { ...data, [column.key]: numeric };
     }
     if (column.key === "deadline") {
+      if (/T.*(?:Z|[+-]\d{2}:\d{2})$/.test(text)) {
+        const instant = new Date(text);
+        if (!Number.isFinite(instant.getTime()))
+          throw new Error("Use a valid date");
+        return { ...data, deadline: instant.toISOString() };
+      }
       const wall = /^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T23:59` : text;
       return {
         ...data,
@@ -521,7 +631,7 @@ export function RecordSheets({
   }
   function edit(id: string, column: Column, text: string) {
     try {
-      replace((prev) =>
+      mutate((prev) =>
         prev.map((r) =>
           r.id === id
             ? {
@@ -551,7 +661,7 @@ export function RecordSheets({
     return kind === "task" ? !!row.data.done : row.data.status === "Completed";
   }
   function toggleComplete(id: string) {
-    replace((previous) =>
+    mutate((previous) =>
       previous.map((row) => {
         if (row.id !== id) return row;
         const done = !completed(row);
@@ -610,7 +720,7 @@ export function RecordSheets({
         });
       }
     }
-    replace((prev) => {
+    mutate((prev) => {
       const patches = new Map(changed.map((r) => [r.id, r]));
       const result = prev.map((r) => {
         const update = patches.get(r.id);
@@ -621,8 +731,167 @@ export function RecordSheets({
     });
     changed.filter((r) => !r.error).forEach((r) => queue(r.id));
   }
+  function patchRow(id: string, patch: Partial<Data>) {
+    mutate((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              data: { ...r.data, ...patch },
+              version: r.version + 1,
+              error: "",
+            }
+          : r,
+      ),
+    );
+    queue(id);
+  }
+  async function importFile(file: File) {
+    setFileStatus("Reading file…");
+    try {
+      const table = await readTableFile(file);
+      if (table.length < 2)
+        throw new Error("Include a header row and at least one entry.");
+      if (table.length > 501)
+        throw new Error("Import up to 500 rows per file.");
+      const headers = table[0].map((h) => h.trim());
+      if (
+        new Set(headers.filter(Boolean).map((h) => h.toLowerCase())).size !==
+        headers.filter(Boolean).length
+      )
+        throw new Error("Give each column a unique header.");
+      const known = new Set(
+        columns.flatMap((c) => [c.key.toLowerCase(), c.label.toLowerCase()]),
+      );
+      const custom = headers.filter(
+        (h) =>
+          h &&
+          !known.has(h.toLowerCase()) &&
+          !["completed", "subtasks", "sheet", "timezone"].includes(
+            h.toLowerCase(),
+          ),
+      );
+      if (
+        extraColumns.length +
+          custom.filter((x) => !extraColumns.includes(x)).length >
+        50
+      )
+        throw new Error("Maximum 50 custom columns per sheet.");
+      const mapped = headers.map(
+        (h) =>
+          columns.find(
+            (c) =>
+              c.key.toLowerCase() === h.toLowerCase() ||
+              c.label.toLowerCase() === h.toLowerCase(),
+          ) || { key: `custom:${h}`, label: h },
+      );
+      if (!mapped.some((c) => c.key === "title"))
+        throw new Error(`Include a ${baseColumns[0].label} or title header.`);
+      const imported = table
+        .slice(1)
+        .filter((row) => row.some(Boolean))
+        .map((cells, index) => {
+          const row = blank();
+          let data = row.data;
+          const zoneIndex = headers.findIndex(
+            (h) => h.toLowerCase() === "timezone",
+          );
+          if (zoneIndex >= 0 && cells[zoneIndex])
+            data = { ...data, timezone: cells[zoneIndex] };
+          cells.forEach((cell, i) => {
+            const header = headers[i]?.toLowerCase();
+            if (!header) return;
+            if (header === "completed") {
+              const done = /^(true|yes|1|completed)$/i.test(cell);
+              data =
+                kind === "task"
+                  ? {
+                      ...data,
+                      done,
+                      completedOn: done ? new Date().toISOString() : "",
+                    }
+                  : kind === "project" && done
+                    ? { ...data, status: "Completed", progress: 100 }
+                    : data;
+            } else if (header === "subtasks" && kind === "task") {
+              data = { ...data, subtasks: cell ? JSON.parse(cell) : [] };
+            } else if (!["sheet", "timezone"].includes(header))
+              data = apply(data, mapped[i], cell);
+          });
+          const result = recordSchema.safeParse({ kind, data });
+          if (!result.success)
+            throw new Error(
+              `Row ${index + 2}: ${result.error.issues[0].message}`,
+            );
+          return { ...row, data: result.data.data, version: 1 };
+        });
+      if (custom.length)
+        remember({
+          ...preferences,
+          [active]: [...new Set([...extraColumns, ...custom])],
+        });
+      mutate((prev) => [...prev, ...imported]);
+      imported.forEach((r) => queue(r.id));
+      setFileStatus(
+        `Imported ${imported.length} rows into ${active}. Check save status; tasks outside this date range appear on their due dates.`,
+      );
+    } catch (e) {
+      setFileStatus(e instanceof Error ? e.message : "Could not import file");
+    }
+  }
+  async function exportFile(format: "csv" | "xlsx") {
+    try {
+      const table = [
+        columns
+          .map((c) => c.label)
+          .concat(["Timezone"])
+          .concat(
+            kind === "task"
+              ? ["Completed", "Subtasks"]
+              : kind === "project"
+                ? ["Completed"]
+                : [],
+          ),
+        ...visibleRows
+          .filter((r) => r.data.title.trim())
+          .map((r) =>
+            columns
+              .map((c) => value(r, c))
+              .concat([r.data.timezone || zone])
+              .concat(
+                kind === "task"
+                  ? [
+                      String(!!r.data.done),
+                      JSON.stringify(r.data.subtasks || []),
+                    ]
+                  : kind === "project"
+                    ? [String(completed(r))]
+                    : [],
+              ),
+          ),
+      ];
+      await downloadTable(table, `${kind}-${active}`, format);
+      setFileStatus(
+        "Exported visible rows with current search, date and sort.",
+      );
+    } catch (e) {
+      setFileStatus(e instanceof Error ? e.message : "Export failed");
+    }
+  }
   const content = (
-    <section className="panel opportunity-sheets">
+    <section
+      className="panel opportunity-sheets"
+      onKeyDown={(e) => {
+        if (
+          (e.ctrlKey || e.metaKey) &&
+          e.key.toLowerCase() === "z" &&
+          !e.shiftKey
+        ) {
+          e.preventDefault();
+          void undo();
+        }
+      }}
+    >
       <div className="sheet-heading">
         <div>
           <h2>
@@ -709,6 +978,64 @@ export function RecordSheets({
           <Plus size={15} /> Add row
         </Button>
       </div>
+      <div className="sheet-tools">
+        <input
+          aria-label="Search sheet"
+          placeholder="Search this sheet…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          aria-label="Sort sheet"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          <option value="">Original order</option>
+          {columns.map((c) => (
+            <option key={c.key} value={c.key}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Sort direction"
+          value={direction}
+          onChange={(e) => setDirection(e.target.value)}
+        >
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
+        </select>
+        <Button
+          variant="outline"
+          disabled={!historyCount || undoBusy || rows.some((r) => r.busy)}
+          onClick={() => void undo()}
+        >
+          Undo · Ctrl+Z
+        </Button>
+        <label className="import-button">
+          Import CSV / Excel
+          <input
+            type="file"
+            accept=".csv,.tsv,.xlsx"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void importFile(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        <Button variant="outline" onClick={() => void exportFile("csv")}>
+          Export CSV
+        </Button>
+        <Button variant="outline" onClick={() => void exportFile("xlsx")}>
+          Export Excel
+        </Button>
+      </div>
+      {fileStatus && (
+        <p className="sheet-hint" role="status">
+          {fileStatus}
+        </p>
+      )}
       <p className="sheet-hint">
         Tab moves between cells · Enter moves down · Paste Excel rows directly ·
         Deadline times use each row’s timezone (new rows: {zone}). Sheets and
@@ -749,6 +1076,7 @@ export function RecordSheets({
               ))}
               <th>Sheet</th>
               <th>Save status</th>
+              {kind === "task" && <th>Subtasks</th>}
               {kind !== "opportunity" && <th>Completed</th>}
             </tr>
           </thead>
@@ -867,6 +1195,64 @@ export function RecordSheets({
                     "Add a name"
                   )}
                 </td>
+                {kind === "task" && (
+                  <td className="subtask-cell">
+                    {(row.data.subtasks || []).map((task, index) => (
+                      <label key={index}>
+                        <input
+                          type="checkbox"
+                          checked={task.done}
+                          aria-label={`Complete subtask ${task.title}`}
+                          onChange={(e) =>
+                            patchRow(row.id, {
+                              subtasks: row.data.subtasks!.map((x, i) =>
+                                i === index
+                                  ? { ...x, done: e.target.checked }
+                                  : x,
+                              ),
+                            })
+                          }
+                        />
+                        <span>{task.title}</span>
+                        <button
+                          aria-label={`Remove subtask ${task.title}`}
+                          onClick={() =>
+                            patchRow(row.id, {
+                              subtasks: row.data.subtasks!.filter(
+                                (_, i) => i !== index,
+                              ),
+                            })
+                          }
+                        >
+                          ×
+                        </button>
+                      </label>
+                    ))}
+                    <input
+                      aria-label={`Add subtask to ${row.data.title || "task"}`}
+                      placeholder="Subtask + Enter"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const title = e.currentTarget.value.trim();
+                          if (title && (row.data.subtasks?.length || 0) < 100) {
+                            patchRow(row.id, {
+                              subtasks: [
+                                ...(row.data.subtasks || []),
+                                { title, done: false },
+                              ],
+                            });
+                            e.currentTarget.value = "";
+                          }
+                        }
+                      }}
+                    />
+                    <small>
+                      {row.data.subtasks?.filter((x) => x.done).length || 0}/
+                      {row.data.subtasks?.length || 0} done
+                    </small>
+                  </td>
+                )}
                 {kind !== "opportunity" && (
                   <td className="sheet-completion-cell">
                     <button

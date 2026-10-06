@@ -1,4 +1,5 @@
-"use client";
+import { DeadlineReminders } from "./DeadlineReminders";
+("use client");
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutDashboard,
@@ -118,7 +119,12 @@ import {
   type Kind,
   type Data,
 } from "@/lib/records";
-import { listRecords, saveRecord, deleteRecord } from "@/lib/backend";
+import {
+  listRecords,
+  saveRecord,
+  deleteRecord,
+  ensureNextRepeat,
+} from "@/lib/backend";
 type View =
   | "overview"
   | "opportunities"
@@ -426,6 +432,25 @@ export default function Workspace({
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
   const sheetSaved = useCallback((record: Item) => {
+    if (
+      record.kind === "task" &&
+      record.data.done &&
+      record.data.repeat &&
+      record.data.repeat !== "None"
+    ) {
+      void ensureNextRepeat(record)
+        .then((next) => {
+          if (next)
+            setItems((prev) =>
+              prev.some((x) => x.id === next.id) ? prev : [next, ...prev],
+            );
+        })
+        .catch(() =>
+          toast.error(
+            "Task saved, but next repeat could not be created. Reopen and complete to retry.",
+          ),
+        );
+    }
     setItems((previous) =>
       previous.some((item) => item.id === record.id)
         ? previous.map((item) => (item.id === record.id ? record : item))
@@ -449,6 +474,7 @@ export default function Workspace({
     setItems((prev) =>
       id ? prev.map((x) => (x.id === id ? record : x)) : [record, ...prev],
     );
+    sheetSaved(record);
     toast.success(id ? "Changes saved" : "Added to your workspace");
   }
   async function update(item: Item, patch: Partial<Data>) {
@@ -1014,6 +1040,14 @@ export default function Workspace({
           </div>
         )}
         <main className="content">
+          {!signedOut && (
+            <DeadlineReminders
+              items={items}
+              zone={zone}
+              account={user?.email || ""}
+              onOpen={setDetailId}
+            />
+          )}
           <div className="page-heading">
             <div>
               <div className="eyebrow">
@@ -1060,6 +1094,9 @@ export default function Workspace({
                   zone={zone}
                   account={user.email}
                   onSaved={sheetSaved}
+                  onRemoved={(ids) =>
+                    setItems((prev) => prev.filter((x) => !ids.includes(x.id)))
+                  }
                   onOpen={setDetailId}
                 />
               </div>
@@ -1070,6 +1107,9 @@ export default function Workspace({
                   zone={zone}
                   account={user.email}
                   onSaved={sheetSaved}
+                  onRemoved={(ids) =>
+                    setItems((prev) => prev.filter((x) => !ids.includes(x.id)))
+                  }
                   onOpen={setDetailId}
                 />
               </div>
@@ -1089,6 +1129,9 @@ export default function Workspace({
                   portalTarget={taskSheetTarget}
                   completionFilter={plannerTab === "daily" ? taskFilter : "All"}
                   onSaved={sheetSaved}
+                  onRemoved={(ids) =>
+                    setItems((prev) => prev.filter((x) => !ids.includes(x.id)))
+                  }
                   onOpen={setDetailId}
                 />
               </div>

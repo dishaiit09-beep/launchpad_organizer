@@ -1,5 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import { recordSchema, type Data, type Item, type Kind } from "./records";
+import {
+  nextRepeatData,
+  recordSchema,
+  type Data,
+  type Item,
+  type Kind,
+} from "./records";
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const key = (
@@ -230,4 +236,39 @@ export async function saveSheetPreferences(
     data: { [sheetPreferenceField(kind)]: sheets },
   });
   if (error) throw new Error(error.message);
+}
+
+// A deterministic ID prevents duplicate next occurrences after retries or reopening.
+export async function ensureNextRepeat(item: Item): Promise<Item | null> {
+  if (item.kind !== "task") return null;
+  const data = nextRepeatData(item.data);
+  if (!data) return null;
+  const digest = new Uint8Array(
+    await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(item.id + ":" + data.deadline),
+    ),
+  );
+  digest[6] = (digest[6] & 15) | 80;
+  digest[8] = (digest[8] & 63) | 128;
+  const hex = [...digest.slice(0, 16)]
+    .map((x) => x.toString(16).padStart(2, "0"))
+    .join("");
+  const id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  const user = await currentUser();
+  const { error } = await client()
+    .from("records")
+    .upsert(
+      { id, owner_id: user.id, kind: "task", data },
+      { onConflict: "id", ignoreDuplicates: true },
+    );
+  if (error) throw explain(error);
+  const result = await client()
+    .from("records")
+    .select(columns)
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .single();
+  if (result.error) throw explain(result.error);
+  return decode(result.data as Row);
 }

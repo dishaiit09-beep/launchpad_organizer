@@ -82,3 +82,45 @@ test("date filters use the display timezone at midnight", () => {
   assert.equal(taskOnDay(boundary, "2026-10-06", zone), true);
   assert.equal(taskOnDay({ title: "Undated" }, "2026-10-06", zone), false);
 });
+test("repeat tasks keep local time across DST and reset subtasks", () => {
+  const { nextRepeatData, isoToWallTime } = module.exports;
+  const data = {
+    title: "Practice",
+    done: true,
+    repeat: "Daily",
+    timezone: "America/New_York",
+    deadline: "2026-03-07T14:00:00.000Z",
+    subtasks: [{ title: "Read", done: true }],
+  };
+  const next = nextRepeatData(data);
+  assert.equal(isoToWallTime(next.deadline, data.timezone), "2026-03-08T09:00");
+  assert.equal(next.done, false);
+  assert.equal(next.subtasks[0].done, false);
+  assert.equal(
+    module.exports.nextRepeatData({ ...data, repeat: "Weekly" }).deadline,
+    "2026-03-14T13:00:00.000Z",
+  );
+  assert.equal(module.exports.nextRepeatData({ ...data, done: false }), null);
+});
+test("reminders fire only at 3 and 1 days in user's timezone for active entries", () => {
+  const { reminderDays } = module.exports;
+  const item = {
+    id: "1",
+    kind: "task",
+    data: { title: "Apply", deadline: "2026-10-09T18:29:00.000Z" },
+  };
+  assert.equal(reminderDays(item, new Date("2026-10-06T04:30:00Z"), zone), 3);
+  assert.equal(reminderDays(item, new Date("2026-10-08T04:30:00Z"), zone), 1);
+  assert.equal(
+    reminderDays(item, new Date("2026-10-07T04:30:00Z"), zone),
+    null,
+  );
+  assert.equal(
+    reminderDays(
+      { ...item, data: { ...item.data, done: true } },
+      new Date("2026-10-08T04:30:00Z"),
+      zone,
+    ),
+    null,
+  );
+});

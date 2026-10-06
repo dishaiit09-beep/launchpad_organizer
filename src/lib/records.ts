@@ -100,6 +100,16 @@ export const dataSchema = z
     lorCount: z.number().int().min(0).max(10).optional(),
     appliedOn: date,
     completedOn: date,
+    repeat: z.enum(["None", "Daily", "Weekly"]).optional(),
+    subtasks: z
+      .array(
+        z.object({
+          title: z.string().trim().min(1).max(300),
+          done: z.boolean(),
+        }),
+      )
+      .max(100)
+      .optional(),
     followupAt: date,
     email: z.union([z.literal(""), z.string().email()]).optional(),
     phone: str,
@@ -131,6 +141,17 @@ export const recordSchema = z
   .object({ kind: z.enum(kinds), data: dataSchema })
   .strict()
   .superRefine((v, ctx) => {
+    if (
+      v.kind === "task" &&
+      v.data.repeat &&
+      v.data.repeat !== "None" &&
+      !v.data.deadline
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["data", "deadline"],
+        message: "Add a due date for a repeating task",
+      });
     if (
       v.kind === "opportunity" &&
       v.data.status &&
@@ -281,4 +302,43 @@ export function taskWeekDay(
   const due = dayKey(data.deadline, zone);
   const carryDay = today < start ? start : today > end ? end : today;
   return !data.done && due < carryDay ? carryDay : due;
+}
+
+// Advance in the task's timezone, preserving its local clock time.
+export function nextRepeatData(data: Data): Data | null {
+  if (!data.done || !data.deadline || !data.repeat || data.repeat === "None")
+    return null;
+  const zone = data.timezone || "Asia/Kolkata";
+  const wall = isoToWallTime(data.deadline, zone);
+  const date = new Date(wall.slice(0, 10) + "T12:00:00Z");
+  date.setUTCDate(date.getUTCDate() + (data.repeat === "Weekly" ? 7 : 1));
+  return {
+    ...data,
+    deadline: wallTimeToISO(
+      date.toISOString().slice(0, 10) + wall.slice(10),
+      zone,
+    ),
+    done: false,
+    completedOn: "",
+    subtasks: data.subtasks?.map((x) => ({ ...x, done: false })),
+  };
+}
+export function reminderDays(
+  item: Item,
+  now: Date,
+  zone: string,
+): number | null {
+  if (
+    !item.data.deadline ||
+    isFinished(item) ||
+    (item.kind === "opportunity" &&
+      !["To apply", "Preparing"].includes(item.data.status || "To apply"))
+  )
+    return null;
+  const days = Math.round(
+    (Date.parse(dayKey(item.data.deadline, zone)) -
+      Date.parse(dayKey(now, zone))) /
+      86400000,
+  );
+  return [1, 3].includes(days) ? days : null;
 }
