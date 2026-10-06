@@ -124,3 +124,70 @@ test("reminders fire only at 3 and 1 days in user's timezone for active entries"
     null,
   );
 });
+test("custom task reminders appear at the selected instant, survive missed times, and respect dismissal", () => {
+  const { taskReminderDue, recordSchema } = module.exports;
+  const item = {
+    id: "task",
+    kind: "task",
+    data: { title: "Read", reminderAt: "2026-10-06T04:30:00.000Z" },
+  };
+  assert.equal(taskReminderDue(item, new Date("2026-10-06T04:29:59Z")), false);
+  assert.equal(taskReminderDue(item, new Date("2026-10-06T04:30:00Z")), true);
+  assert.equal(taskReminderDue(item, new Date("2026-10-07T04:30:00Z")), true);
+  assert.equal(
+    taskReminderDue(
+      {
+        ...item,
+        data: { ...item.data, reminderDismissedFor: item.data.reminderAt },
+      },
+      new Date("2026-10-07T04:30:00Z"),
+    ),
+    false,
+  );
+  assert.equal(
+    taskReminderDue(
+      { ...item, data: { ...item.data, done: true } },
+      new Date("2026-10-07T04:30:00Z"),
+    ),
+    false,
+  );
+  assert.equal(
+    taskReminderDue(
+      { ...item, kind: "project" },
+      new Date("2026-10-07T04:30:00Z"),
+    ),
+    false,
+  );
+  assert.equal(
+    recordSchema.safeParse(
+      item.kind ? { kind: item.kind, data: item.data } : {},
+    ).success,
+    true,
+  );
+  assert.equal(
+    recordSchema.safeParse({
+      kind: item.kind,
+      data: { ...item.data, reminderAt: "9 am" },
+    }).success,
+    false,
+  );
+});
+test("repeating tasks advance their custom reminder and reset dismissal across DST", () => {
+  const { nextRepeatData, isoToWallTime } = module.exports;
+  const data = {
+    title: "Practice",
+    done: true,
+    repeat: "Daily",
+    timezone: "America/New_York",
+    deadline: "2026-03-07T15:00:00.000Z",
+    reminderAt: "2026-03-07T14:00:00.000Z",
+    reminderDismissedFor: "2026-03-07T14:00:00.000Z",
+  };
+  const next = nextRepeatData(data);
+  assert.equal(isoToWallTime(next.deadline, data.timezone), "2026-03-08T10:00");
+  assert.equal(
+    isoToWallTime(next.reminderAt, data.timezone),
+    "2026-03-08T09:00",
+  );
+  assert.equal(next.reminderDismissedFor, "");
+});

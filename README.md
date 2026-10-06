@@ -78,3 +78,12 @@ Export downloads the current visible sheet rows, respecting the selected date ra
 In either task database, choose **Repeat → Daily / Weekly** and enter a due date. Completing a task creates the next occurrence at the same local time, with unchecked subtasks. Only one next occurrence is created per completed task/date, even when retried. An unfinished occurrence carries forward in red as usual; repeats advance when completed, rather than generating a backlog automatically. The task editor also has **Repeat task** and a subtask list.
 
 In the **Subtasks** column, type a step and press Enter; tick the checkbox to complete it, or × to remove it. The counter updates and all changes autosave across daily and weekly views. Completing subtasks does not automatically complete their parent task.
+
+
+## Custom task reminder times and themes
+
+In **Daily to-do** or **Weekly to-do**, use the optional **Remind me at** cell to choose a reminder date and time. The task editor has the same option. The time is stored using that task's timezone and syncs with its account. Leave it blank for only the default 3-day and 1-day deadline reminders.
+
+At the chosen time the reminder appears in the app, and an optional browser notification is sent when permission is granted. The app checks roughly every 10 seconds while open and rechecks when brought back into focus; browser background throttling can delay it. If the app was closed, missed reminders appear on the next open. **Dismiss** clears only that custom reminder and syncs across devices; completing its task also hides it. Repeating tasks shift their custom reminder along with their next due date. CSV/Excel import and export include the custom reminder column.
+
+The moon/sun button in the top bar switches **Light / Dark** mode. Before a choice is saved, the app uses the device's theme when opened. Your manual choice is saved on that device, including for later visits. Dark mode covers sheets, cards, planner, calendar and edit dialogs, with green completed tasks and red overdue tasks.

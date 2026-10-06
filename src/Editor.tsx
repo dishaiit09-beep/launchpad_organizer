@@ -115,7 +115,7 @@ export function Editor({
   );
   const [dates, setDates] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      ["deadline", "followupAt", "appliedOn"].map((key) => [
+      ["deadline", "followupAt", "appliedOn", "reminderAt"].map((key) => [
         key,
         isoToWallTime(
           (item?.data || defaults)?.[key as keyof Data] as string,
@@ -235,8 +235,15 @@ export function Editor({
     setBusy(true);
     try {
       const finalData = { ...data };
-      for (const key of ["deadline", "followupAt", "appliedOn"] as const)
+      for (const key of [
+        "deadline",
+        "followupAt",
+        "appliedOn",
+        "reminderAt",
+      ] as const)
         finalData[key] = wallTimeToISO(dates[key] || "", data.timezone || zone);
+      if (kind === "task" && finalData.reminderAt !== item?.data.reminderAt)
+        finalData.reminderDismissedFor = "";
       const valid = recordSchema.safeParse({ kind, data: finalData });
       if (!valid.success) throw new Error(valid.error.issues[0].message);
       await onSave(kind, valid.data.data, item?.id);
@@ -307,6 +314,15 @@ export function Editor({
               ? "Follow-up date"
               : "Deadline / due date",
         )}
+      {kind === "task" && (
+        <div className="field full">
+          {date("reminderAt", "Remind me at (optional)")}
+          <small>
+            Choose your reminder date and time. Default reminders 3 days and 1
+            day before the deadline stay enabled.
+          </small>
+        </div>
+      )}
       {kind !== "block" && choice("timezone", "Date and time timezone", zones)}
       {kind === "block" && choice("weekday", "Day", weekdays)}
       {kind === "block" && field("startTime", "Start time", "time")}

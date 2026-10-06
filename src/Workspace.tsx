@@ -1,3 +1,4 @@
+import { ThemeToggle } from "./ThemeToggle";
 import { DeadlineReminders } from "./DeadlineReminders";
 ("use client");
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -997,6 +998,7 @@ export default function Workspace({
             <strong>{navigation.find((x) => x.id === view)?.label}</strong>
           </div>
           <div className="topbar-right">
+            <ThemeToggle />
             <label className="search-box">
               <Search size={17} />
               <Input
@@ -1046,6 +1048,10 @@ export default function Workspace({
               zone={zone}
               account={user?.email || ""}
               onOpen={setDetailId}
+              onDismiss={(item) =>
+                update(item, { reminderDismissedFor: item.data.reminderAt })
+              }
+              pending={pending}
             />
           )}
           <div className="page-heading">

@@ -319,3 +319,17 @@
   background: #fff1d6;
   text-align: left;
 }
+.reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reminder-row .reminder-entry {
+  flex: 1;
+}
+.reminder-dismiss {
+  padding: 8px;
+  border: 1px solid #d5dbe2;
+  border-radius: 6px;
+  font-size: 13px;
+}

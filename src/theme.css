@@ -1,0 +1,326 @@
+/* Keep the original light palette; dark mode shares the same semantic colours. */
+html.dark {
+  --background: #101521;
+  --foreground: #e4eaf4;
+  --card: #192131;
+  --card-foreground: #e4eaf4;
+  --popover: #1d2638;
+  --popover-foreground: #e4eaf4;
+  --primary: #aa91ff;
+  --primary-foreground: #161022;
+  --secondary: #263147;
+  --secondary-foreground: #e1e7f1;
+  --muted: #222c40;
+  --muted-foreground: #abb8cc;
+  --accent: #33294c;
+  --accent-foreground: #d0bbff;
+  --destructive: #ff8a9c;
+  --border: #344158;
+  --input: #44516b;
+  --ring: #b19bff;
+  --sidebar: #192131;
+  --sidebar-foreground: #abb8cc;
+  --sidebar-primary: #aa91ff;
+  --sidebar-primary-foreground: #161022;
+  --sidebar-accent: #33294c;
+  --sidebar-accent-foreground: #d0bbff;
+  --sidebar-border: #344158;
+  --sidebar-ring: #b19bff;
+}
+.theme-toggle {
+  gap: 6px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+html.dark .workspace-main {
+  background: var(--background);
+}
+html.dark
+  :is(
+    .launch-sidebar [data-slot="sidebar-inner"],
+    .topbar,
+    .panel,
+    .stat-card,
+    .entry-card,
+    .deadline-row,
+    .kanban-card,
+    .task-row,
+    .week-task,
+    .detail-sheet,
+    .sheet-table tr.sheet-row-open
+  ) {
+  background: var(--card);
+}
+html.dark
+  :is(
+    .brand,
+    .page-heading h1,
+    .grow > strong,
+    .table-title strong,
+    .topbar-left strong,
+    .help-content strong
+  ) {
+  color: var(--foreground);
+}
+html.dark
+  :is(
+    .page-heading p,
+    .eyebrow,
+    .workspace-label,
+    .sidebar-note p,
+    .tiny-label,
+    .topbar-left,
+    .icon-button,
+    .sign-out,
+    .install-link,
+    .creator-name,
+    .stat-card > div,
+    .stat-card small,
+    .grow > small,
+    .date-stack strong,
+    .date-stack small,
+    .focus-summary small,
+    .focus-date,
+    .journey-grid button > span,
+    .filter-group > span,
+    .table-scroll th,
+    .table-title small,
+    .deadline-cell,
+    .deadline-cell small,
+    .document-count,
+    .document-count > span,
+    .view-toolbar > span,
+    .card-meta,
+    .entry-card > p,
+    .next-step,
+    .next-step > span,
+    .kanban-column > h2,
+    .kanban-card p,
+    .kanban-add,
+    .week-heading,
+    .week-task,
+    .calendar-legend,
+    .calendar-number,
+    .calendar-cell > small,
+    .workspace-footer,
+    .muted,
+    .field,
+    .field-help,
+    .detail-section h3,
+    .detail-section p,
+    .detail-sheet [data-slot="sheet-description"],
+    .detail-check,
+    .document-row,
+    .document-row label:last-child,
+    .help-content,
+    .sheet-heading p,
+    .sheet-hint,
+    .sheet-bottom span,
+    .sheet-table td:first-child,
+    .sheet-save,
+    .auth-loading
+  ) {
+  color: var(--muted-foreground);
+}
+html.dark
+  :is(
+    .panel-heading,
+    .deadline-row,
+    .task-row,
+    .panel-footer-link,
+    .next-step,
+    .calendar-cell,
+    .calendar-weekdays,
+    .calendar-legend,
+    .table-scroll td,
+    .sidebar-note,
+    .workspace-footer,
+    .detail-check,
+    .document-row,
+    .sheet-tabs,
+    .sheet-table th,
+    .sheet-table td,
+    .sheet-bottom,
+    .kanban-column,
+    .kanban-card,
+    .lor-card,
+    .related-item,
+    .import-button,
+    .reminder-dismiss
+  ) {
+  border-color: var(--border);
+}
+html.dark
+  :is(
+    .kanban-column,
+    .count-pill,
+    .badge.slate,
+    .badge,
+    .workspace-label span,
+    .item-icon,
+    .view-toolbar [data-slot="tabs-list"],
+    .editor-tabs,
+    .calendar-weekdays,
+    .sheet-table th,
+    .sheet-tabs button
+  ) {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+html.dark .editor-tabs {
+  background: var(--muted) !important;
+}
+html.dark
+  :is(
+    .field input,
+    .field textarea,
+    .sheet-tools input,
+    .sheet-tools select,
+    .date-navigation input,
+    .table-scroll th
+  ) {
+  background: var(--card);
+  color: var(--foreground);
+  border-color: var(--input);
+}
+html.dark .choice {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+}
+html.dark :is(.sheet-table input, .sheet-table select) {
+  color: var(--foreground);
+}
+html.dark :is(select option) {
+  background: var(--popover);
+  color: var(--foreground);
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #a5b1c4;
+}
+html.dark
+  :is(
+    .sheet-tabs button[aria-selected="true"],
+    .signin-banner,
+    .welcome-panel,
+    .detail-callout,
+    .related-item,
+    .avatar,
+    .item-icon.violet,
+    .badge.violet,
+    .focus-date span,
+    .calendar-event,
+    .week-event,
+    .timetable-block,
+    .agenda-block,
+    .mobile-event-count,
+    .external-button.secondary
+  ) {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: #56436f;
+}
+html.dark
+  .launch-sidebar
+  [data-slot="sidebar-menu-button"][data-active="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+html.dark :is(.nav-count, .empty-icon) {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+html.dark
+  :is(
+    .welcome-panel p,
+    .detail-callout span,
+    .detail-callout strong,
+    .detail-callout small,
+    .detail-callout p,
+    .sheet-rename,
+    .text-button
+  ) {
+  color: var(--accent-foreground);
+}
+html.dark :is(.badge.teal, .item-icon.teal, .calendar-event.teal) {
+  background: #153c38;
+  color: #8de0c5;
+}
+html.dark :is(.badge.rose, .form-error, .auth-message, .error-panel) {
+  background: #482935;
+  color: #ffadbc;
+  border-color: #825062;
+}
+html.dark .error-panel p {
+  color: #ffadbc;
+}
+html.dark
+  :is(
+    .deadline-row:hover,
+    .stat-card:hover,
+    .entry-card:hover,
+    .icon-button:hover,
+    .sheet-rename:hover
+  ) {
+  background: var(--secondary);
+}
+html.dark .sheet-table :is(input, select):focus {
+  background: var(--secondary);
+}
+html.dark
+  :is(
+    .task-row.completed,
+    .week-task.completed,
+    .sheet-table tr.sheet-row-completed,
+    .entry-card.project-completed
+  ) {
+  background: #16382c;
+  border-color: #346d52;
+}
+html.dark
+  :is(.task-row.completed .task-title strong, .week-task.completed .done-text) {
+  color: #a2ecc0;
+}
+html.dark
+  :is(
+    .sheet-table tr.sheet-row-overdue,
+    .task-row.carried-task,
+    .week-task.carried-task
+  ) {
+  background: #43232d;
+}
+html.dark :is(.carry-badge, .sheet-row-overdue td:first-child, .red-text) {
+  color: #ff9dab !important;
+}
+html.dark :is(.completion-button, .week-task button.completion-button) {
+  background: var(--card);
+  border-color: var(--input);
+  color: var(--foreground);
+}
+html.dark
+  :is(
+    .completion-button.is-complete,
+    .week-task button.completion-button.is-complete
+  ) {
+  background: #218c55;
+  border-color: #218c55;
+  color: #fff;
+}
+html.dark .reminder-entry {
+  background: #44351b;
+  color: #ffe0a3;
+}
+html.dark .lor-card {
+  background: var(--muted);
+}
+html.dark :is(.lor-card h4, .lor-card p) {
+  color: var(--muted-foreground);
+}
+html.dark .calendar-cell.selected {
+  background: var(--accent);
+}
+@media (max-width: 767px) {
+  .theme-toggle span {
+    display: none;
+  }
+}

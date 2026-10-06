@@ -100,6 +100,8 @@ export const dataSchema = z
     lorCount: z.number().int().min(0).max(10).optional(),
     appliedOn: date,
     completedOn: date,
+    reminderAt: date,
+    reminderDismissedFor: date,
     repeat: z.enum(["None", "Daily", "Weekly"]).optional(),
     subtasks: z
       .array(
@@ -309,15 +311,20 @@ export function nextRepeatData(data: Data): Data | null {
   if (!data.done || !data.deadline || !data.repeat || data.repeat === "None")
     return null;
   const zone = data.timezone || "Asia/Kolkata";
-  const wall = isoToWallTime(data.deadline, zone);
-  const date = new Date(wall.slice(0, 10) + "T12:00:00Z");
-  date.setUTCDate(date.getUTCDate() + (data.repeat === "Weekly" ? 7 : 1));
-  return {
-    ...data,
-    deadline: wallTimeToISO(
+  function advance(value: string) {
+    const wall = isoToWallTime(value, zone);
+    const date = new Date(wall.slice(0, 10) + "T12:00:00Z");
+    date.setUTCDate(date.getUTCDate() + (data.repeat === "Weekly" ? 7 : 1));
+    return wallTimeToISO(
       date.toISOString().slice(0, 10) + wall.slice(10),
       zone,
-    ),
+    );
+  }
+  return {
+    ...data,
+    deadline: advance(data.deadline),
+    reminderAt: data.reminderAt ? advance(data.reminderAt) : "",
+    reminderDismissedFor: "",
     done: false,
     completedOn: "",
     subtasks: data.subtasks?.map((x) => ({ ...x, done: false })),
@@ -341,4 +348,15 @@ export function reminderDays(
       86400000,
   );
   return [1, 3].includes(days) ? days : null;
+}
+
+// Missed custom reminders remain visible until dismissed or the task is completed.
+export function taskReminderDue(item: Item, now: Date): boolean {
+  return (
+    item.kind === "task" &&
+    !isFinished(item) &&
+    !!item.data.reminderAt &&
+    item.data.reminderDismissedFor !== item.data.reminderAt &&
+    Date.parse(item.data.reminderAt) <= now.getTime()
+  );
 }

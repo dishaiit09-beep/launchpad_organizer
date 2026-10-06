@@ -54,6 +54,7 @@ const projectColumns: Column[] = [
 const taskColumns: Column[] = [
   { key: "title", label: "Task" },
   { key: "deadline", label: "Due date", type: "datetime-local" },
+  { key: "reminderAt", label: "Remind me at", type: "datetime-local" },
   { key: "priority", label: "Priority", options: ["High", "Medium", "Low"] },
   { key: "duration", label: "Time (minutes)", type: "number" },
   { key: "notes", label: "Notes" },
@@ -585,8 +586,11 @@ export function RecordSheets({
   function value(row: Row, column: Column) {
     if (column.key.startsWith("custom:"))
       return row.data.customFields?.[column.key.slice(7)] || "";
-    if (column.key === "deadline")
-      return isoToWallTime(row.data.deadline, row.data.timezone || zone);
+    if (column.type === "datetime-local")
+      return isoToWallTime(
+        row.data[column.key as "deadline" | "reminderAt"],
+        row.data.timezone || zone,
+      );
     return String(row.data[column.key as keyof Data] ?? "");
   }
   function apply(data: Data, column: Column, text: string): Data {
@@ -601,17 +605,28 @@ export function RecordSheets({
         throw new Error("Use a valid number");
       return { ...data, [column.key]: numeric };
     }
-    if (column.key === "deadline") {
+    if (column.type === "datetime-local") {
       if (/T.*(?:Z|[+-]\d{2}:\d{2})$/.test(text)) {
         const instant = new Date(text);
         if (!Number.isFinite(instant.getTime()))
           throw new Error("Use a valid date");
-        return { ...data, deadline: instant.toISOString() };
+        return {
+          ...data,
+          [column.key]: instant.toISOString(),
+          ...(column.key === "reminderAt" &&
+          instant.toISOString() !== data.reminderAt
+            ? { reminderDismissedFor: "" }
+            : {}),
+        };
       }
       const wall = /^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T23:59` : text;
       return {
         ...data,
-        deadline: wallTimeToISO(wall, data.timezone || zone),
+        [column.key]: wallTimeToISO(wall, data.timezone || zone),
+        ...(column.key === "reminderAt" &&
+        wallTimeToISO(wall, data.timezone || zone) !== data.reminderAt
+          ? { reminderDismissedFor: "" }
+          : {}),
         timezone: data.timezone || zone,
       };
     }
@@ -1040,6 +1055,8 @@ export function RecordSheets({
         Tab moves between cells · Enter moves down · Paste Excel rows directly ·
         Deadline times use each row’s timezone (new rows: {zone}). Sheets and
         saved rows sync across your devices.
+        {kind === "task" &&
+          " Optional: choose a date and time in Remind me at. Default 3-day and 1-day deadline reminders still apply."}
       </p>
       {settingsStatus && (
         <p className="sheet-hint" role="status">
