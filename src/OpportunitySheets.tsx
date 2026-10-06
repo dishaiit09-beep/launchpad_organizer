@@ -14,11 +14,12 @@ import {
   isoToWallTime,
   type Data,
   type Item,
+  type Kind,
 } from "./lib/records";
 import "./sheets.css";
 
 type Column = { key: string; label: string; type?: string; options?: string[] };
-const baseColumns: Column[] = [
+const opportunityColumns: Column[] = [
   { key: "title", label: "Opportunity" },
   { key: "organization", label: "Organisation" },
   { key: "category", label: "Category", options: categories },
@@ -28,6 +29,50 @@ const baseColumns: Column[] = [
   { key: "nextStep", label: "Next action" },
   { key: "notes", label: "Notes / POC / LOR" },
 ];
+type SheetKind = Extract<Kind, "opportunity" | "project" | "task">;
+const projectColumns: Column[] = [
+  { key: "title", label: "Project" },
+  { key: "organization", label: "Team / organisation" },
+  { key: "deadline", label: "Deadline", type: "datetime-local" },
+  {
+    key: "status",
+    label: "Status",
+    options: ["Not started", "In progress", "On hold", "Completed"],
+  },
+  { key: "progress", label: "Progress (%)", type: "number" },
+  { key: "priority", label: "Priority", options: ["High", "Medium", "Low"] },
+  { key: "nextStep", label: "Next action" },
+  { key: "url", label: "Project link" },
+  { key: "notes", label: "Notes" },
+];
+const taskColumns: Column[] = [
+  { key: "title", label: "Task" },
+  { key: "deadline", label: "Due date", type: "datetime-local" },
+  { key: "priority", label: "Priority", options: ["High", "Medium", "Low"] },
+  { key: "duration", label: "Time (minutes)", type: "number" },
+  { key: "notes", label: "Notes" },
+];
+const sheetCopy = {
+  opportunity: {
+    title: "Your opportunity sheets",
+    singular: "opportunity",
+    label: "Opportunity sheets",
+    hint: "Deadlines appear in your calendar.",
+  },
+  project: {
+    title: "Your project sheets",
+    singular: "project",
+    label: "Project sheets",
+    hint: "Each row is a project, with its deadline and progress connected to your workspace.",
+  },
+  task: {
+    title: "Your task sheets",
+    singular: "task",
+    label: "Task sheets",
+    hint: "Each row is a task in your daily and weekly plan. Mark it complete to turn it green.",
+  },
+};
+
 type Row = {
   id: string;
   data: Data;
@@ -48,20 +93,34 @@ const rowFromItem = (item: Item): Row => ({
 
 // Keep one save in flight per row. Edits made during a request are saved next.
 // A stable UUID makes retrying a new row safe, even after a lost response.
-export function OpportunitySheets({
+export function RecordSheets({
   items,
   zone,
   account,
+  kind = "opportunity",
+  defaultDeadline,
   onSaved,
   onOpen,
 }: {
   items: Item[];
   zone: string;
   account: string;
+  kind?: SheetKind;
+  defaultDeadline?: string;
   onSaved: (item: Item) => void;
   onOpen: (id: string) => void;
 }) {
-  const preferenceKey = `launchpad-sheets:${account}`;
+  const copy = sheetCopy[kind];
+  const baseColumns =
+    kind === "task"
+      ? taskColumns
+      : kind === "project"
+        ? projectColumns
+        : opportunityColumns;
+  const preferenceKey =
+    kind === "opportunity"
+      ? `launchpad-sheets:${account}`
+      : `launchpad-${kind}-sheets:${account}`;
   const readPreferences = (): Record<string, string[]> => {
     try {
       const value = JSON.parse(
@@ -107,7 +166,7 @@ export function OpportunitySheets({
     };
   }, []);
   useEffect(() => {
-    void loadSheetPreferences()
+    void loadSheetPreferences(kind)
       .then((saved) => {
         if (saved && !preferencesEdited.current && mounted.current) {
           setPreferences(saved);
@@ -119,7 +178,7 @@ export function OpportunitySheets({
       .catch(() => {
         if (mounted.current)
           setSettingsStatus(
-            "Could not load sheet settings. Your saved opportunities are still available.",
+            "Could not load sheet settings. Your saved entries are still available.",
           );
       });
   }, []);
@@ -129,12 +188,34 @@ export function OpportunitySheets({
       const result = previous.flatMap((old) => {
         const item = incoming.get(old.id);
         incoming.delete(old.id);
-        if (item)
-          return [
-            old.busy || old.saved !== fingerprint(old.data)
-              ? old
-              : rowFromItem(item),
-          ];
+        if (item) {
+          if (!old.busy && old.saved === fingerprint(old.data))
+            return [rowFromItem(item)];
+          if (!old.saved) return [old];
+          // A planner completion click must not be overwritten by a pending
+          // sheet edit. Merge remote changes to fields not being edited here.
+          const baseline: Data = JSON.parse(old.saved);
+          const merged: Data = { ...old.data };
+          let changed = false;
+          const keys = new Set([
+            ...Object.keys(baseline),
+            ...Object.keys(item.data),
+          ]) as Set<keyof Data>;
+          for (const key of keys) {
+            if (
+              JSON.stringify(old.data[key]) === JSON.stringify(baseline[key]) &&
+              JSON.stringify(item.data[key]) !== JSON.stringify(baseline[key])
+            ) {
+              Object.assign(merged, { [key]: item.data[key] });
+              changed = true;
+            }
+          }
+          if (changed) {
+            queue(old.id);
+            return [{ ...old, data: merged, version: old.version + 1 }];
+          }
+          return [old];
+        }
         return old.saved === "" ||
           old.busy ||
           old.saved !== fingerprint(old.data)
@@ -172,7 +253,7 @@ export function OpportunitySheets({
       .catch(() => {})
       .then(async () => {
         try {
-          await saveSheetPreferences(next);
+          await saveSheetPreferences(next, kind);
           if (mounted.current) setSettingsStatus("Sheet settings saved");
         } catch (error) {
           if (mounted.current)
@@ -209,14 +290,14 @@ export function OpportunitySheets({
         replace((prev) =>
           prev.map((r) =>
             r.id === id
-              ? { ...r, error: "Add an opportunity name to save this row." }
+              ? { ...r, error: `Add a ${copy.singular} name to save this row.` }
               : r,
           ),
         );
       return;
     }
     const checked = recordSchema.safeParse({
-      kind: "opportunity",
+      kind,
       data: row.data,
     });
     if (!checked.success) {
@@ -233,7 +314,7 @@ export function OpportunitySheets({
       prev.map((r) => (r.id === id ? { ...r, busy: true, error: "" } : r)),
     );
     try {
-      const item = await saveSheetRecord(snapshot, id);
+      const item = await saveSheetRecord(snapshot, id, kind);
       replace((prev) =>
         prev.map((r) =>
           r.id === id ? { ...r, busy: false, saved: fingerprint(snapshot) } : r,
@@ -338,8 +419,15 @@ export function OpportunitySheets({
       data: {
         title: "",
         sheet: active,
-        category: "Other",
-        status: "To apply",
+        ...(kind === "opportunity"
+          ? { category: "Other", status: "To apply" }
+          : kind === "project"
+            ? { status: "Not started", progress: 0 }
+            : { done: false }),
+        priority: "Medium",
+        ...(kind === "task" && defaultDeadline
+          ? { deadline: defaultDeadline }
+          : {}),
         timezone: zone,
         customFields: Object.fromEntries(extraColumns.map((c) => [c, ""])),
       },
@@ -360,7 +448,7 @@ export function OpportunitySheets({
       return row.data.customFields?.[column.key.slice(7)] || "";
     if (column.key === "deadline")
       return isoToWallTime(row.data.deadline, row.data.timezone || zone);
-    return String(row.data[column.key as keyof Data] || "");
+    return String(row.data[column.key as keyof Data] ?? "");
   }
   function apply(data: Data, column: Column, text: string): Data {
     if (column.key.startsWith("custom:"))
@@ -368,6 +456,12 @@ export function OpportunitySheets({
         ...data,
         customFields: { ...data.customFields, [column.key.slice(7)]: text },
       };
+    if (column.type === "number") {
+      const numeric = text === "" ? undefined : Number(text);
+      if (numeric !== undefined && !Number.isFinite(numeric))
+        throw new Error("Use a valid number");
+      return { ...data, [column.key]: numeric };
+    }
     if (column.key === "deadline") {
       const wall = /^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T23:59` : text;
       return {
@@ -379,7 +473,13 @@ export function OpportunitySheets({
     return {
       ...data,
       [column.key]: text,
-      ...(column.key === "status" && text === "Applied" && !data.appliedOn
+      ...(kind === "project" && column.key === "status" && text === "Completed"
+        ? { progress: 100 }
+        : {}),
+      ...(kind === "opportunity" &&
+      column.key === "status" &&
+      text === "Applied" &&
+      !data.appliedOn
         ? { appliedOn: new Date().toISOString() }
         : {}),
     };
@@ -411,6 +511,32 @@ export function OpportunitySheets({
         ),
       );
     }
+  }
+  function completed(row: Row) {
+    return kind === "task" ? !!row.data.done : row.data.status === "Completed";
+  }
+  function toggleComplete(id: string) {
+    replace((previous) =>
+      previous.map((row) => {
+        if (row.id !== id) return row;
+        const done = !completed(row);
+        return {
+          ...row,
+          data: {
+            ...row.data,
+            ...(kind === "task"
+              ? { done }
+              : {
+                  status: done ? "Completed" : "In progress",
+                  progress: done ? 100 : 0,
+                }),
+          },
+          version: row.version + 1,
+          error: "",
+        };
+      }),
+    );
+    queue(id, 0);
   }
   function paste(
     event: React.ClipboardEvent,
@@ -464,18 +590,11 @@ export function OpportunitySheets({
     <section className="panel opportunity-sheets">
       <div className="sheet-heading">
         <div>
-          <h2>Your opportunity sheets</h2>
-          <p>
-            Type directly. Changes save after a short pause. Deadlines appear in
-            your calendar.
-          </p>
+          <h2>{copy.title}</h2>
+          <p>Type directly. Changes save after a short pause. {copy.hint}</p>
         </div>
       </div>
-      <div
-        className="sheet-tabs"
-        role="tablist"
-        aria-label="Opportunity sheets"
-      >
+      <div className="sheet-tabs" role="tablist" aria-label={copy.label}>
         {sheetNames.map((name) => (
           <button
             role="tab"
@@ -584,11 +703,21 @@ export function OpportunitySheets({
               ))}
               <th>Sheet</th>
               <th>Save status</th>
+              {kind !== "opportunity" && <th>Completed</th>}
             </tr>
           </thead>
           <tbody>
             {visibleRows.map((row, rowIndex) => (
-              <tr key={row.id}>
+              <tr
+                key={row.id}
+                className={
+                  kind === "opportunity"
+                    ? undefined
+                    : completed(row)
+                      ? "sheet-row-completed"
+                      : "sheet-row-open"
+                }
+              >
                 <td>{rowIndex + 1}</td>
                 {columns.map((column, columnIndex) => (
                   <td key={column.key}>
@@ -680,6 +809,20 @@ export function OpportunitySheets({
                     "Add a name"
                   )}
                 </td>
+                {kind !== "opportunity" && (
+                  <td className="sheet-completion-cell">
+                    <button
+                      type="button"
+                      className={`completion-button ${completed(row) ? "is-complete" : ""}`}
+                      aria-label={`${completed(row) ? "Reopen" : "Complete"} ${row.data.title || copy.singular}`}
+                      aria-pressed={completed(row)}
+                      disabled={row.busy || !row.data.title.trim()}
+                      onClick={() => toggleComplete(row.id)}
+                    >
+                      {completed(row) ? "✓ Completed" : "Mark complete"}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -703,3 +846,6 @@ export function OpportunitySheets({
     </section>
   );
 }
+
+// Keep the existing opportunity entry point for older callers.
+export const OpportunitySheets = RecordSheets;

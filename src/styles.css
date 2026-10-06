@@ -716,10 +716,11 @@ a {
 }
 .task-row.completed .task-title strong {
   text-decoration: line-through;
-  color: #a0a8b8;
+  color: #21613d;
 }
 .task-row.completed {
-  opacity: 0.75;
+  background: #e8f8ed;
+  opacity: 1;
 }
 .badge {
   display: inline-flex;

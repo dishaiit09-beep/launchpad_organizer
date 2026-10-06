@@ -25,7 +25,7 @@ test("sheet retries update the same private record and preserve extra columns", 
     await db.exec(
       `set role authenticated; set request.jwt.claim.sub = '${owner}';`,
     );
-    const upsert = `insert into public.records(id,owner_id,kind,data) values ($1,$2,'opportunity',$3)
+    const upsert = `insert into public.records(id,owner_id,kind,data) values ($1,$2,$3,$4)
       on conflict(id) do update set data=excluded.data,owner_id=excluded.owner_id returning *`;
     const data = {
       title: "Research internship",
@@ -35,8 +35,14 @@ test("sheet retries update the same private record and preserve extra columns", 
       timezone: "Asia/Kolkata",
       customFields: { "POC email": "prof@example.com", LOR: "Requested" },
     };
-    const first = (await db.query(upsert, [id, owner, data])).rows[0];
-    await db.query(upsert, [id, owner, { ...data, organization: "IITB" }]);
+    const first = (await db.query(upsert, [id, owner, "opportunity", data]))
+      .rows[0];
+    await db.query(upsert, [
+      id,
+      owner,
+      "opportunity",
+      { ...data, organization: "IITB" },
+    ]);
     const rows = (await db.query("select * from public.records")).rows;
     assert.equal(rows.length, 1, "retry must not duplicate the opportunity");
     assert.equal(
@@ -45,9 +51,51 @@ test("sheet retries update the same private record and preserve extra columns", 
     );
     assert.equal(rows[0].data.customFields["POC email"], "prof@example.com");
     assert.equal(rows[0].data.deadline, data.deadline);
+    for (const [kind, suffix] of [
+      ["project", "4"],
+      ["task", "5"],
+    ]) {
+      const recordId = `00000000-0000-0000-0000-00000000000${suffix}`;
+      const completed = {
+        title: `${kind} sheet entry`,
+        sheet: "Weekly",
+        ...(kind === "task"
+          ? { done: true }
+          : { status: "Completed", progress: 100 }),
+      };
+      await db.query(upsert, [recordId, owner, kind, completed]);
+      await db.query(upsert, [recordId, owner, kind, completed]);
+      const saved = (
+        await db.query("select * from public.records where id=$1", [recordId])
+      ).rows;
+      assert.equal(saved.length, 1);
+      assert.equal(saved[0].kind, kind);
+      assert.equal(
+        kind === "task"
+          ? saved[0].data.done
+          : saved[0].data.status === "Completed",
+        true,
+      );
+      const reopened = {
+        ...completed,
+        ...(kind === "task"
+          ? { done: false }
+          : { status: "In progress", progress: 0 }),
+      };
+      await db.query(upsert, [recordId, owner, kind, reopened]);
+      const row = (
+        await db.query("select data from public.records where id=$1", [
+          recordId,
+        ])
+      ).rows[0];
+      assert.equal(
+        kind === "task" ? row.data.done : row.data.status === "Completed",
+        false,
+      );
+    }
     await db.exec(`set request.jwt.claim.sub = '${other}';`);
     await assert.rejects(
-      db.query(upsert, [id, other, data]),
+      db.query(upsert, [id, other, "opportunity", data]),
       /row-level security/,
     );
     assert.equal(

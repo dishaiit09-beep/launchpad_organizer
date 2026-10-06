@@ -177,8 +177,12 @@ function releaseSheetSlot() {
   else sheetRequests--;
 }
 // Spreadsheet rows use a stable ID, so a retry cannot create duplicates.
-export async function saveSheetRecord(data: Data, id: string): Promise<Item> {
-  const entry = recordSchema.parse({ kind: "opportunity", data });
+export async function saveSheetRecord(
+  data: Data,
+  id: string,
+  kind: Extract<Kind, "opportunity" | "project" | "task"> = "opportunity",
+): Promise<Item> {
+  const entry = recordSchema.parse({ kind, data });
   await acquireSheetSlot();
   try {
     const user = await currentUser();
@@ -194,12 +198,19 @@ export async function saveSheetRecord(data: Data, id: string): Promise<Item> {
   }
 }
 
-export async function loadSheetPreferences(): Promise<Record<
-  string,
-  string[]
-> | null> {
+type SheetKind = Extract<Kind, "opportunity" | "project" | "task">;
+function sheetPreferenceField(kind: SheetKind) {
+  return kind === "opportunity"
+    ? "launchpadSheets"
+    : kind === "project"
+      ? "launchpadProjectSheets"
+      : "launchpadTaskSheets";
+}
+export async function loadSheetPreferences(
+  kind: SheetKind = "opportunity",
+): Promise<Record<string, string[]> | null> {
   const user = await currentUser();
-  const value = user.user_metadata.launchpadSheets;
+  const value = user.user_metadata[sheetPreferenceField(kind)];
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return Object.fromEntries(
     Object.entries(value).filter(
@@ -213,9 +224,10 @@ export async function loadSheetPreferences(): Promise<Record<
 }
 export async function saveSheetPreferences(
   sheets: Record<string, string[]>,
+  kind: SheetKind = "opportunity",
 ): Promise<void> {
   const { error } = await client().auth.updateUser({
-    data: { launchpadSheets: sheets },
+    data: { [sheetPreferenceField(kind)]: sheets },
   });
   if (error) throw new Error(error.message);
 }

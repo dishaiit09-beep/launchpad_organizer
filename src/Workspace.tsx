@@ -98,7 +98,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { OpportunitySheets } from "./OpportunitySheets";
+import { RecordSheets } from "./OpportunitySheets";
 import { Editor, Choice } from "./Editor";
 import {
   categories,
@@ -357,7 +357,7 @@ export default function Workspace({
     [sort, setSort] = useState("Soonest deadline");
   const [plannerDate, setPlannerDate] = useState(() => dayKey(new Date())),
     [plannerTab, setPlannerTab] = useState("daily"),
-    [taskFilter, setTaskFilter] = useState("Open");
+    [taskFilter, setTaskFilter] = useState("All");
   const [month, setMonth] = useState(() => dayKey(new Date()).slice(0, 7)),
     [calendarDay, setCalendarDay] = useState<string | null>(null);
   const installEvent = useRef<
@@ -619,12 +619,16 @@ export default function Workspace({
             className={`task-row ${item.data.done ? "completed" : ""}`}
             key={item.id}
           >
-            <Checkbox
-              aria-label={`Complete ${item.data.title}`}
-              checked={item.data.done || false}
+            <button
+              type="button"
+              className={`completion-button completion-icon ${item.data.done ? "is-complete" : ""}`}
+              aria-label={`${item.data.done ? "Reopen" : "Complete"} ${item.data.title}`}
+              aria-pressed={!!item.data.done}
               disabled={pending.has(item.id)}
-              onCheckedChange={(v) => void update(item, { done: !!v })}
-            />
+              onClick={() => void update(item, { done: !item.data.done })}
+            >
+              <Check size={16} />
+            </button>
             <button
               className="grow task-title"
               onClick={() => setDetailId(item.id)}
@@ -655,7 +659,7 @@ export default function Workspace({
       <div className="cards-grid">
         {list.map((item) => (
           <button
-            className="entry-card"
+            className={`entry-card ${kind === "project" && item.data.status === "Completed" ? "project-completed" : ""}`}
             key={item.id}
             onClick={() => setDetailId(item.id)}
           >
@@ -1013,16 +1017,45 @@ export default function Workspace({
             </DropdownMenu>
           </div>
           {user && !loading && !loadError && (
-            <div hidden={view !== "opportunities" || !!query}>
-              <OpportunitySheets
-                items={opportunities}
-                zone={zone}
-                account={user.email}
-                onSaved={sheetSaved}
-                onOpen={setDetailId}
-              />
-            </div>
+            <>
+              <div hidden={view !== "opportunities" || !!query}>
+                <RecordSheets
+                  kind="opportunity"
+                  items={opportunities}
+                  zone={zone}
+                  account={user.email}
+                  onSaved={sheetSaved}
+                  onOpen={setDetailId}
+                />
+              </div>
+              <div hidden={view !== "projects" || !!query}>
+                <RecordSheets
+                  kind="project"
+                  items={projects}
+                  zone={zone}
+                  account={user.email}
+                  onSaved={sheetSaved}
+                  onOpen={setDetailId}
+                />
+              </div>
+              <div
+                hidden={
+                  view !== "planner" || plannerTab === "timetable" || !!query
+                }
+              >
+                <RecordSheets
+                  kind="task"
+                  items={tasks}
+                  zone={zone}
+                  account={user.email}
+                  defaultDeadline={wallTimeToISO(`${plannerDate}T23:59`, zone)}
+                  onSaved={sheetSaved}
+                  onOpen={setDetailId}
+                />
+              </div>
+            </>
           )}
+
           {loadError ? (
             <div className="error-panel" role="alert">
               <strong>Your workspace couldn’t load.</strong>
@@ -1623,15 +1656,22 @@ export default function Workspace({
                                 dayKey(x.data.deadline, zone) === day,
                             )
                             .map((x) => (
-                              <div className="week-task" key={x.id}>
-                                <Checkbox
-                                  checked={x.data.done || false}
+                              <div
+                                className={`week-task ${x.data.done ? "completed" : ""}`}
+                                key={x.id}
+                              >
+                                <button
+                                  type="button"
+                                  className={`completion-button completion-icon ${x.data.done ? "is-complete" : ""}`}
                                   disabled={pending.has(x.id)}
-                                  aria-label={`Complete ${x.data.title}`}
-                                  onCheckedChange={(v) =>
-                                    void update(x, { done: !!v })
+                                  aria-label={`${x.data.done ? "Reopen" : "Complete"} ${x.data.title}`}
+                                  aria-pressed={!!x.data.done}
+                                  onClick={() =>
+                                    void update(x, { done: !x.data.done })
                                   }
-                                />
+                                >
+                                  <Check size={14} />
+                                </button>
                                 <button
                                   className={x.data.done ? "done-text" : ""}
                                   onClick={() => setDetailId(x.id)}
@@ -1946,6 +1986,23 @@ export default function Workspace({
                 )}
                 {detail.kind === "project" && (
                   <div className="detail-section">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditor({
+                          kind: "task",
+                          defaults: {
+                            linkedId: detail.id,
+                            title: detail.data.nextStep || "",
+                            deadline: detail.data.deadline,
+                            timezone: detail.data.timezone || zone,
+                          },
+                        });
+                        setDetailId(null);
+                      }}
+                    >
+                      <Plus size={15} /> Add task for this project
+                    </Button>
                     <h3>Project status</h3>
                     <Choice
                       label="Project status"

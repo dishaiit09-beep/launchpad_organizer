@@ -51,3 +51,9 @@ Open **Opportunities** to type directly into a spreadsheet. Use **+ Sheet** to g
 Every named row saves automatically after a short pause. **Enter** moves down and **Tab** moves between cells. Copy rows from Excel and paste into the starting cell; columns follow the table order. For pasted dates, use `YYYY-MM-DD` (due at 23:59 in the row timezone) or `YYYY-MM-DDTHH:mm`. Paste up to 500 rows at a time.
 
 Wait for **Saved** before closing. Invalid rows remain visible with an error; correct them or retry after a connection failure. Sheet settings and saved opportunities sync with your Google account. The sheets use the existing opportunity records, so calendar deadlines and application stages stay connected. No new SQL setup is needed.
+
+## Project and task sheets
+
+**Projects** and **Daily & weekly plan** now have the same spreadsheet editor. Entries save as normal projects or tasks, so their deadlines, project cards, daily lists, weekly lists and calendar use the same records. Each section has its own sheets and extra columns.
+
+New task rows are due at 23:59 on the planner’s selected date; change **Due date** for another day. **Mark complete** turns a row green and saves its completion. Press **Completed** again to reopen it. The daily list initially shows both pending and completed tasks; its status filter can show either. The daily and weekly completion buttons update the same task. Open a project’s **Details** and choose **Add task for this project** to create a linked task using the existing editor.

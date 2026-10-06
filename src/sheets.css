@@ -163,3 +163,81 @@
 .sheet-rename:hover {
   background: #eae4fc;
 }
+/* A task stays white until its completion button is pressed. */
+.sheet-table tr.sheet-row-open {
+  background: #fff;
+}
+.sheet-table tr.sheet-row-completed {
+  background: #e8f8ed;
+}
+.sheet-completion-cell {
+  padding: 8px 10px !important;
+  min-width: 145px;
+}
+.completion-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border: 1px solid #d5dce2;
+  border-radius: 7px;
+  background: #fff;
+  color: #65717c;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.completion-button.is-complete {
+  background: #17834c;
+  border-color: #17834c;
+  color: #fff;
+}
+.completion-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.completion-button:focus-visible {
+  outline: 2px solid #765bb7;
+  outline-offset: 2px;
+}
+.completion-button.completion-icon {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  padding: 4px;
+}
+.task-row {
+  background: #fff;
+}
+.task-row.completed {
+  background: #e8f8ed;
+  opacity: 1;
+}
+.task-row.completed .task-title strong {
+  color: #21613d;
+}
+.week-task {
+  background: #fff;
+  border-radius: 7px;
+  padding: 10px 6px;
+}
+.week-task.completed {
+  background: #e8f8ed;
+}
+.week-task.completed .done-text {
+  color: #21613d;
+}
+.week-task button.completion-button {
+  background: #fff;
+  border: 1px solid #d5dce2;
+  padding: 4px;
+}
+.week-task button.completion-button.is-complete {
+  background: #17834c;
+  border-color: #17834c;
+  color: #fff;
+}
+.entry-card.project-completed {
+  background: #e8f8ed;
+  border-color: #b6dec5;
+}
