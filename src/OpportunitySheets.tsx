@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, ExternalLink } from "lucide-react";
 import { Button } from "./components/ui/button";
 import {
   saveSheetRecord,
@@ -35,7 +35,7 @@ const opportunityColumns: Column[] = [
   { key: "nextStep", label: "Next action" },
   { key: "notes", label: "Notes / POC / LOR" },
 ];
-type SheetKind = Extract<Kind, "opportunity" | "project" | "task">;
+type SheetKind = Extract<Kind, "opportunity" | "project" | "task" | "resource">;
 const projectColumns: Column[] = [
   { key: "title", label: "Project" },
   { key: "organization", label: "Team / organisation" },
@@ -60,7 +60,21 @@ const taskColumns: Column[] = [
   { key: "notes", label: "Notes" },
   { key: "repeat", label: "Repeat", options: ["None", "Daily", "Weekly"] },
 ];
+const resourceColumns: Column[] = [
+  { key: "title", label: "Resource name" },
+  { key: "url", label: "Link" },
+  { key: "category", label: "Category" },
+  { key: "organization", label: "Source / course" },
+  { key: "status", label: "Saved / pinned", options: ["Saved", "Pinned"] },
+  { key: "notes", label: "Notes" },
+];
 const sheetCopy = {
+  resource: {
+    title: "Your resource links",
+    singular: "resource",
+    label: "Resource sheets",
+    hint: "Save courses, videos, documentation and useful websites. Use full https:// links; Open launches them in a new tab.",
+  },
   opportunity: {
     title: "Your opportunity sheets",
     singular: "opportunity",
@@ -137,7 +151,9 @@ export function RecordSheets({
       ? taskColumns
       : kind === "project"
         ? projectColumns
-        : opportunityColumns;
+        : kind === "resource"
+          ? resourceColumns
+          : opportunityColumns;
   const preferenceKey =
     kind === "opportunity"
       ? `launchpad-sheets:${account}`
@@ -563,7 +579,9 @@ export function RecordSheets({
           ? { category: "Other", status: "To apply" }
           : kind === "project"
             ? { status: "Not started", progress: 0 }
-            : { done: false }),
+            : kind === "resource"
+              ? { status: "Saved", category: "" }
+              : { done: false }),
         priority: "Medium",
         ...(kind === "task" && defaultDeadline
           ? { deadline: defaultDeadline }
@@ -895,7 +913,7 @@ export function RecordSheets({
   }
   const content = (
     <section
-      className="panel opportunity-sheets"
+      className={`panel opportunity-sheets ${kind === "resource" ? "resource-sheets" : ""}`}
       onKeyDown={(e) => {
         if (
           (e.ctrlKey || e.metaKey) &&
@@ -1094,7 +1112,7 @@ export function RecordSheets({
               <th>Sheet</th>
               <th>Save status</th>
               {kind === "task" && <th>Subtasks</th>}
-              {kind !== "opportunity" && <th>Completed</th>}
+              {["task", "project"].includes(kind) && <th>Completed</th>}
             </tr>
           </thead>
           <tbody>
@@ -1102,7 +1120,7 @@ export function RecordSheets({
               <tr
                 key={row.id}
                 className={
-                  kind === "opportunity"
+                  ["opportunity", "resource"].includes(kind)
                     ? undefined
                     : completed(row)
                       ? "sheet-row-completed"
@@ -1163,6 +1181,20 @@ export function RecordSheets({
                         }}
                       />
                     )}
+                    {kind === "resource" &&
+                      column.key === "url" &&
+                      row.data.url &&
+                      /^https?:\/\//i.test(row.data.url) && (
+                        <a
+                          className="resource-open"
+                          href={row.data.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Open resource ${row.data.title || "link"}`}
+                        >
+                          <ExternalLink size={13} /> Open
+                        </a>
+                      )}
                   </td>
                 ))}
                 <td>
@@ -1270,7 +1302,7 @@ export function RecordSheets({
                     </small>
                   </td>
                 )}
-                {kind !== "opportunity" && (
+                {["task", "project"].includes(kind) && (
                   <td className="sheet-completion-cell">
                     <button
                       type="button"

@@ -32,6 +32,7 @@ import {
   Code2,
   Sparkles,
   ArrowUpRight,
+  Bookmark,
 } from "lucide-react";
 import {
   SidebarProvider,
@@ -134,7 +135,8 @@ type View =
   | "prep"
   | "planner"
   | "calendar"
-  | "contacts";
+  | "contacts"
+  | "resources";
 const navigation = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "opportunities", label: "Opportunities", icon: Telescope },
@@ -144,6 +146,7 @@ const navigation = [
   { id: "planner", label: "Daily & weekly plan", icon: ListTodo },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "contacts", label: "Contacts & professors", icon: UsersRound },
+  { id: "resources", label: "Resources", icon: Bookmark },
 ] as const;
 const viewCopy: Record<
   View,
@@ -179,6 +182,11 @@ const viewCopy: Record<
   calendar: {
     title: "Deadline calendar",
     subtitle: "Applications, follow-ups, tests, and tasks in one place.",
+  },
+  resources: {
+    title: "Your resource library",
+    subtitle:
+      "Important courses, videos, documentation and links, saved in one place.",
   },
   contacts: {
     title: "People to keep in touch with",
@@ -510,7 +518,8 @@ export default function Workspace({
     tasks = items.filter((x) => x.kind === "task"),
     tests = items.filter((x) => x.kind === "test"),
     projects = items.filter((x) => x.kind === "project"),
-    contacts = items.filter((x) => x.kind === "contact");
+    contacts = items.filter((x) => x.kind === "contact"),
+    resources = items.filter((x) => x.kind === "resource");
   const events = useMemo(
     () =>
       items
@@ -622,6 +631,7 @@ export default function Workspace({
       (
         {
           project: FolderKanban,
+          resource: Bookmark,
           contact: UsersRound,
           test: BookOpen,
           task: ListTodo,
@@ -951,7 +961,7 @@ export default function Workspace({
           {
             name: "create_launchpad_entry",
             description:
-              "Create an opportunity, contact, project, test, task, or timetable block in the current workspace. Requires a signed-in Google account.",
+              "Create an opportunity, contact, project, test, task, resource, or timetable block in the current workspace. Requires a signed-in Google account.",
             inputSchema: {
               type: "object",
               properties: {
@@ -1110,6 +1120,19 @@ export default function Workspace({
                 <RecordSheets
                   kind="project"
                   items={projects}
+                  zone={zone}
+                  account={user.email}
+                  onSaved={sheetSaved}
+                  onRemoved={(ids) =>
+                    setItems((prev) => prev.filter((x) => !ids.includes(x.id)))
+                  }
+                  onOpen={setDetailId}
+                />
+              </div>
+              <div hidden={view !== "resources" || !!query}>
+                <RecordSheets
+                  kind="resource"
+                  items={resources}
                   zone={zone}
                   account={user.email}
                   onSaved={sheetSaved}
@@ -1509,6 +1532,49 @@ export default function Workspace({
                     </div>
                   </TabsContent>
                 </Tabs>
+              )}
+              {view === "resources" && (
+                <>
+                  <div className="view-toolbar">
+                    <span>{resources.length} saved resources</span>
+                    <Button onClick={() => add("resource")}>
+                      <Plus size={16} /> New resource
+                    </Button>
+                  </div>
+                  {resources.some(
+                    (x) => x.data.status === "Pinned" && x.data.url,
+                  ) && (
+                    <section className="panel pinned-resources">
+                      <div className="panel-heading">
+                        <h2>
+                          <Bookmark size={16} /> Pinned resources
+                        </h2>
+                      </div>
+                      <div className="resource-shortcuts">
+                        {resources
+                          .filter(
+                            (x) => x.data.status === "Pinned" && x.data.url,
+                          )
+                          .map((item) => (
+                            <a
+                              key={item.id}
+                              href={item.data.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <ExternalLink size={15} />
+                              <span>
+                                {item.data.title}
+                                <small>
+                                  {item.data.category || item.data.organization}
+                                </small>
+                              </span>
+                            </a>
+                          ))}
+                      </div>
+                    </section>
+                  )}
+                </>
               )}
               {view === "projects" && (
                 <>
@@ -2129,6 +2195,17 @@ export default function Workspace({
                       <Progress value={detail.data.progress || 0} />
                       <span>{detail.data.progress || 0}%</span>
                     </div>
+                  </div>
+                )}
+                {detail.kind === "resource" && (
+                  <div className="detail-section">
+                    <h3>Saved / pinned</h3>
+                    <Choice
+                      label="Resource status"
+                      value={detail.data.status || "Saved"}
+                      options={["Saved", "Pinned"]}
+                      onChange={(status) => void update(detail, { status })}
+                    />
                   </div>
                 )}
                 {detail.kind === "task" && (

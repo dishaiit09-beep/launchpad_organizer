@@ -6,6 +6,7 @@ export const kinds = [
   "test",
   "task",
   "block",
+  "resource",
 ] as const;
 export type Kind = (typeof kinds)[number];
 export const categories = [
@@ -64,6 +65,7 @@ export const dataSchema = z
   .object({
     title: z.string().trim().min(1, "A title is required").max(180),
     sheet: z.string().max(100).optional(),
+    recordType: z.literal("resource").optional(),
     customFields: z
       .record(z.string().max(100), z.string().max(10000))
       .optional(),
@@ -192,6 +194,7 @@ export const kindLabels: Record<Kind, string> = {
   test: "test / preparation",
   task: "task",
   block: "timetable block",
+  resource: "resource",
 };
 // Convert a wall-clock time in an IANA timezone to an absolute deadline.
 export function wallTimeToISO(value: string, zone: string) {
@@ -359,4 +362,23 @@ export function taskReminderDue(item: Item, now: Date): boolean {
     item.data.reminderDismissedFor !== item.data.reminderAt &&
     Date.parse(item.data.reminderAt) <= now.getTime()
   );
+}
+
+// Resources use a marker in existing project storage. This avoids a database
+// migration for installed workspaces; the UI always treats them as resources.
+export function encodeRecord(kind: Kind, data: Data) {
+  const entry = recordSchema.parse({ kind, data });
+  return kind === "resource"
+    ? {
+        kind: "project" as const,
+        data: { ...entry.data, recordType: "resource" as const },
+      }
+    : entry;
+}
+export function decodeRecord(kind: Kind, data: Data) {
+  return recordSchema.parse({
+    kind:
+      kind === "project" && data.recordType === "resource" ? "resource" : kind,
+    data,
+  });
 }

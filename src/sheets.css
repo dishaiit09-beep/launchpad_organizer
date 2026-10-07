@@ -333,3 +333,40 @@
   border-radius: 6px;
   font-size: 13px;
 }
+.resource-sheets .sheet-table {
+  min-width: 1120px;
+}
+.resource-open {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 9px 8px;
+  color: var(--accent-foreground);
+  font-weight: 600;
+}
+.pinned-resources {
+  margin-bottom: 24px;
+}
+.resource-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px;
+}
+.resource-shortcuts a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--secondary);
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.resource-shortcuts small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}

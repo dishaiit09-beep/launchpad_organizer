@@ -100,7 +100,9 @@ export function Editor({
             ? "Have to prepare"
             : kind === "contact"
               ? "Not contacted"
-              : "Not started",
+              : kind === "resource"
+                ? "Saved"
+                : "Not started",
       category: kind === "opportunity" ? categories[0] : undefined,
       lorStatus: "Not needed",
       requirements: [],
@@ -269,6 +271,11 @@ export function Editor({
       </div>
       {kind === "opportunity" &&
         choice("category", "Opportunity type", categories)}
+      {kind === "resource" &&
+        field("category", "Category", "text", "e.g. DSA, EE325, Research")}
+      {kind === "resource" && field("organization", "Source / course")}
+      {kind === "resource" &&
+        choice("status", "Saved / pinned", ["Saved", "Pinned"])}
       {["opportunity", "contact", "project", "test"].includes(kind) &&
         field(
           "organization",
@@ -277,6 +284,7 @@ export function Editor({
             : "Organisation / university",
         )}
       {kind !== "contact" &&
+        kind !== "resource" &&
         kind !== "block" &&
         choice("priority", "Priority", ["High", "Medium", "Low"])}
       {kind === "opportunity" && choice("status", "Application stage", stages)}
@@ -306,6 +314,7 @@ export function Editor({
       {kind === "contact" && field("email", "Email", "email")}
       {kind === "contact" && field("phone", "Phone")}
       {kind !== "block" &&
+        kind !== "resource" &&
         date(
           kind === "contact" ? "followupAt" : "deadline",
           kind === "test"
@@ -323,7 +332,9 @@ export function Editor({
           </small>
         </div>
       )}
-      {kind !== "block" && choice("timezone", "Date and time timezone", zones)}
+      {kind !== "block" &&
+        kind !== "resource" &&
+        choice("timezone", "Date and time timezone", zones)}
       {kind === "block" && choice("weekday", "Day", weekdays)}
       {kind === "block" && field("startTime", "Start time", "time")}
       {kind === "block" && field("endTime", "End time", "time")}
@@ -363,7 +374,9 @@ export function Editor({
             ? "Profile / lab link"
             : kind === "project"
               ? "Repository / project link"
-              : "Application / information link",
+              : kind === "resource"
+                ? "Resource link"
+                : "Application / information link",
           "url",
           "https://",
         )}
@@ -420,6 +433,7 @@ export function Editor({
       {kind === "test" &&
         field("duration", "Test duration (minutes)", "number")}
       {kind !== "block" &&
+        kind !== "resource" &&
         field(
           "documentsUrl",
           "Documents / study resources link",

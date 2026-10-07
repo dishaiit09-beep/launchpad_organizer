@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import {
   nextRepeatData,
-  recordSchema,
+  encodeRecord,
+  decodeRecord,
   type Data,
   type Item,
   type Kind,
@@ -99,7 +100,7 @@ type Row = {
 };
 const columns = "id, kind, data, created_at, updated_at";
 function decode(row: Row): Item {
-  const entry = recordSchema.parse({ kind: row.kind, data: row.data });
+  const entry = decodeRecord(row.kind, row.data);
   return {
     id: row.id,
     ...entry,
@@ -144,7 +145,7 @@ export async function saveRecord(
   data: Data,
   id?: string,
 ): Promise<Item> {
-  const entry = recordSchema.parse({ kind, data });
+  const entry = encodeRecord(kind, data);
   const user = await currentUser();
   const table = client().from("records");
   const operation = id
@@ -186,9 +187,12 @@ function releaseSheetSlot() {
 export async function saveSheetRecord(
   data: Data,
   id: string,
-  kind: Extract<Kind, "opportunity" | "project" | "task"> = "opportunity",
+  kind: Extract<
+    Kind,
+    "opportunity" | "project" | "task" | "resource"
+  > = "opportunity",
 ): Promise<Item> {
-  const entry = recordSchema.parse({ kind, data });
+  const entry = encodeRecord(kind, data);
   await acquireSheetSlot();
   try {
     const user = await currentUser();
@@ -204,13 +208,15 @@ export async function saveSheetRecord(
   }
 }
 
-type SheetKind = Extract<Kind, "opportunity" | "project" | "task">;
+type SheetKind = Extract<Kind, "opportunity" | "project" | "task" | "resource">;
 function sheetPreferenceField(kind: SheetKind) {
   return kind === "opportunity"
     ? "launchpadSheets"
     : kind === "project"
       ? "launchpadProjectSheets"
-      : "launchpadTaskSheets";
+      : kind === "resource"
+        ? "launchpadResourceSheets"
+        : "launchpadTaskSheets";
 }
 export async function loadSheetPreferences(
   kind: SheetKind = "opportunity",

@@ -87,3 +87,12 @@ In **Daily to-do** or **Weekly to-do**, use the optional **Remind me at** cell t
 At the chosen time the reminder appears in the app, and an optional browser notification is sent when permission is granted. The app checks roughly every 10 seconds while open and rechecks when brought back into focus; browser background throttling can delay it. If the app was closed, missed reminders appear on the next open. **Dismiss** clears only that custom reminder and syncs across devices; completing its task also hides it. Repeating tasks shift their custom reminder along with their next due date. CSV/Excel import and export include the custom reminder column.
 
 The moon/sun button in the top bar switches **Light / Dark** mode. Before a choice is saved, the app uses the device's theme when opened. Your manual choice is saved on that device, including for later visits. Dark mode covers sheets, cards, planner, calendar and edit dialogs, with green completed tasks and red overdue tasks.
+
+
+## Resources
+
+Open **Resources** in the sidebar to save important websites, documentation, courses and videos. Type directly into **Resource name**, **Link**, **Category**, **Source / course**, **Saved / pinned**, and **Notes**. Links need `https://` or `http://`; **Open** opens the link in a new tab. Choose **Pinned** for a shortcut below the database. **New resource** opens the regular form, and **Details** lets you edit or delete a saved entry.
+
+Resources have their own named sheets and custom columns, with autosave, search, sorting, Ctrl+Z, Excel paste and CSV/XLSX import-export. Saved links stay private to the signed-in account and sync through Supabase. No additional SQL setup is needed.
+
+For compatibility with existing installed databases, `encodeRecord` stores resources under the existing `project` kind with `data.recordType = "resource"`. `decodeRecord` restores the logical `resource` kind when reading them; ordinary projects remain projects. Resource sheet settings use `launchpadResourceSheets`, separate from project settings.
