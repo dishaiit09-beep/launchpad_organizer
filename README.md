@@ -44,6 +44,10 @@ Edit the title in `index.html` and the credit in `src/Workspace.tsx` to change b
 
 ## Crystal appearance and motion
 
+The pink mirror background now has slowly moving liquid ribbons. Section headers feature a glass hourglass, opportunity rocket, application pipeline, project/task treasure chest, calendar wheel, contact cloud or resource books. Headings, labels and controls have raised highlights and shadows. Hover, press or keyboard-focus a control for a blue neon glow; clicks also create a short blue ring. These are decorative visuals, not extra timers or progress statistics.
+
+`src/mirror.css` contains the new palette and effects, `src/PlayfulObject.tsx` selects each section's sculpture, and `src/NeonFeedback.tsx` handles temporary click rings. The rings never block the normal click, read form data, or send/save cursor positions. Motion off or a device's reduced-motion setting pauses decorative background/object motion and suppresses animated click rings; static focus highlights remain available.
+
 The page header combines faceted crystals, a rotating CSS cube and floating cards whose icons match the current section. Glass surfaces and colourful dashboard tiles work in both light and dark modes. Editable sheet cells stay opaque; green completed tasks and red overdue tasks retain their meaning.
 
 Use **Motion on / Motion off** beside **Add new** to pause or resume decorative animations. The choice stays on this device and syncs across its open tabs. A device's reduced-motion accessibility setting always disables the animations. Artwork is CSS rather than a 3D engine: it makes no network requests, has no mouse tracking and does not change your records. Edit the colour variables at the top of `src/crystal.css` to customise the palette; the animation and mobile rules are at the bottom.

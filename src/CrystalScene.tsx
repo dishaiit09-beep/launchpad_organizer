@@ -13,6 +13,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { applyMotion, readMotion, saveMotion } from "./lib/motion";
+import { PlayfulObject } from "./PlayfulObject";
 
 // Small CSS sculptures: no 3D engine, images, network requests or mouse tracking.
 // The cards change with the current page, so the artwork belongs to the planner.
@@ -34,6 +35,7 @@ export function CrystalScene({ view }: { view: keyof typeof scenes }) {
     <div className="crystal-scene" aria-hidden="true">
       <div className="crystal-aura" />
       <div className="crystal-orbit" />
+      <PlayfulObject view={view} />
       <div className="crystal-float">
         <div className="crystal-gem">
           {Array.from({ length: 6 }, (_, i) => (

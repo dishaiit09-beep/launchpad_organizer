@@ -1,5 +1,6 @@
 import { ThemeToggle } from "./ThemeToggle";
 import { CrystalScene, MotionToggle } from "./CrystalScene";
+import { LiquidBackdrop } from "./NeonFeedback";
 import { DeadlineReminders } from "./DeadlineReminders";
 ("use client");
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1001,6 +1002,7 @@ export default function Workspace({
         onInstall={() => setInstall(true)}
       />
       <SidebarInset className="workspace-main">
+        <LiquidBackdrop />
         <header className="topbar">
           <div className="topbar-left">
             <SidebarTrigger />

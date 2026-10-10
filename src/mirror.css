@@ -1,0 +1,1010 @@
+/* Pink liquid mirror, small CSS sculptures, and blue interaction feedback.
+   Edit these tokens to change the look. Form values and status fills stay solid. */
+:root {
+  --mirror-base: #f7e3ef;
+  --mirror-rose: #efa8d2;
+  --mirror-pearl: #fffafd;
+  --mirror-plum: #c7a8e4;
+  --mirror-depth: #b392c5;
+  --mirror-shadow: #75456b2b;
+  --neon-blue: #118ce5;
+  --neon-halo: #28adff70;
+  --object-blue: #84dbed;
+  --object-rose: #f3aedc;
+  --object-violet: #aa87e4;
+  --object-highlight: #ffffffd9;
+  --object-ink: #544475;
+}
+html.dark {
+  --mirror-base: #211628;
+  --mirror-rose: #6c305e;
+  --mirror-pearl: #796686;
+  --mirror-plum: #44325d;
+  --mirror-depth: #452653;
+  --mirror-shadow: #08051666;
+  --neon-blue: #58caff;
+  --neon-halo: #28adff85;
+  --object-blue: #66cddf;
+  --object-rose: #d892cc;
+  --object-violet: #8f6bd1;
+  --object-highlight: #f4dfffbd;
+  --object-ink: #e4d9fa;
+}
+body {
+  background: var(--mirror-base);
+}
+.workspace-main,
+html.dark .workspace-main {
+  background: linear-gradient(
+    140deg,
+    var(--mirror-base),
+    color-mix(in srgb, var(--mirror-rose) 22%, var(--mirror-base)) 46%,
+    var(--mirror-base)
+  );
+}
+.liquid-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+.liquid-ribbon {
+  position: absolute;
+  width: min(850px, 90%);
+  height: 640px;
+  border-radius: 61% 39% 55% 45% / 43% 61% 39% 57%;
+  background:
+    radial-gradient(ellipse at 26% 16%, var(--mirror-pearl), transparent 28%),
+    radial-gradient(ellipse at 83% 80%, var(--mirror-rose), transparent 56%),
+    conic-gradient(
+      from 55deg,
+      var(--mirror-rose),
+      var(--mirror-pearl),
+      var(--mirror-plum),
+      var(--mirror-pearl),
+      var(--mirror-rose)
+    );
+  box-shadow:
+    inset 20px 18px 44px #ffffff55,
+    inset -22px -30px 48px var(--mirror-shadow),
+    0 30px 75px var(--mirror-shadow);
+  opacity: 0.55;
+  animation: liquid-wander 34s ease-in-out infinite;
+}
+.ribbon-rose {
+  top: -200px;
+  right: -140px;
+  transform: rotate(-22deg);
+}
+.ribbon-pearl {
+  top: 470px;
+  left: -270px;
+  transform: rotate(25deg);
+  animation-delay: -13s;
+  opacity: 0.4;
+}
+.ribbon-violet {
+  top: 1050px;
+  right: -290px;
+  transform: rotate(-18deg);
+  animation-delay: -22s;
+  opacity: 0.35;
+}
+.launch-sidebar [data-slot="sidebar-inner"],
+html.dark .launch-sidebar [data-slot="sidebar-inner"] {
+  background: linear-gradient(
+    145deg,
+    var(--crystal-neutral) 24%,
+    color-mix(in srgb, var(--mirror-rose) 20%, var(--crystal-neutral)) 78%,
+    var(--crystal-frost)
+  );
+  box-shadow:
+    inset -1px 0 0 var(--crystal-specular),
+    7px 0 24px var(--mirror-shadow);
+}
+.crystal-heading {
+  background:
+    radial-gradient(
+      ellipse at 87% 18%,
+      color-mix(in srgb, var(--mirror-pearl) 70%, transparent),
+      transparent 46%
+    ),
+    linear-gradient(
+      125deg,
+      var(--crystal-heading) 28%,
+      color-mix(in srgb, var(--mirror-rose) 62%, var(--crystal-heading)) 68%,
+      color-mix(in srgb, var(--object-blue) 28%, var(--crystal-heading))
+    );
+  border: 1px solid var(--crystal-edge);
+  box-shadow:
+    inset 0 2px 1px var(--crystal-specular),
+    inset 0 -2px 2px var(--mirror-shadow),
+    0 13px 28px var(--mirror-shadow);
+}
+.crystal-heading h1,
+html.dark .crystal-heading h1 {
+  font-weight: 800;
+  text-shadow:
+    0 -1px 0 var(--crystal-specular),
+    0 1px 0 var(--mirror-depth),
+    0 2px 0 var(--mirror-depth),
+    0 3px 0 var(--mirror-depth),
+    1px 6px 7px var(--mirror-shadow);
+}
+:is(
+  .brand,
+  .panel-heading h2,
+  .sheet-heading h2,
+  .kanban-column h2,
+  .week-heading h2,
+  .entry-card h3,
+  .stat-card > strong
+) {
+  text-shadow:
+    0 -1px 0 var(--crystal-specular),
+    0 1px 0 var(--mirror-depth),
+    0 3px 5px var(--mirror-shadow);
+}
+.crystal-heading .eyebrow {
+  width: fit-content;
+  padding: 7px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--crystal-surface-line);
+  background: var(--crystal-glass);
+  box-shadow:
+    inset 0 1px 1px var(--crystal-specular),
+    0 3px 0 var(--mirror-depth),
+    0 6px 12px var(--mirror-shadow);
+  margin-bottom: 16px;
+}
+:is(
+  .workspace-label,
+  .tiny-label,
+  .field > span,
+  .filter-group > span,
+  .sheet-table th
+) {
+  text-shadow:
+    0 -1px 0 var(--crystal-specular),
+    0 2px 3px var(--mirror-shadow);
+}
+.badge,
+.count-pill,
+.nav-count {
+  border: 1px solid var(--crystal-surface-line);
+  box-shadow:
+    inset 0 1px 1px var(--crystal-specular),
+    0 2px 0 var(--mirror-shadow);
+}
+.launch-sidebar [data-slot="sidebar-menu-button"] {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  text-shadow:
+    0 -1px 0 var(--crystal-specular),
+    0 1px 2px var(--mirror-shadow);
+}
+.launch-sidebar [data-slot="sidebar-menu-button"][data-active="true"],
+html.dark
+  .launch-sidebar
+  [data-slot="sidebar-menu-button"][data-active="true"] {
+  box-shadow:
+    inset 3px 0 0 var(--neon-blue),
+    inset 0 1px 0 var(--crystal-specular),
+    0 3px 0 var(--mirror-depth),
+    0 5px 12px var(--neon-halo);
+}
+:is(
+  .add-button,
+  .signin-button,
+  .motion-toggle,
+  .completion-button,
+  .sheet-tabs button,
+  .import-button
+) {
+  box-shadow:
+    inset 0 1px 1px var(--crystal-specular),
+    0 3px 0 var(--mirror-shadow),
+    0 5px 10px var(--mirror-shadow);
+}
+/* The same blue glow works in portals, menus, tables and the sidebar. */
+:is(
+    button,
+    a[href],
+    [role="button"],
+    [role="tab"],
+    input,
+    select,
+    textarea
+  ):not(:disabled):not([aria-disabled="true"]):focus-visible {
+  outline: 2px solid var(--neon-blue) !important;
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 0 0 1px var(--neon-blue),
+    0 0 0 3px var(--neon-halo),
+    0 0 16px var(--neon-halo) !important;
+}
+@media (hover: hover) {
+  :is(
+      button,
+      a[href],
+      [role="button"],
+      [role="tab"],
+      input,
+      select,
+      textarea
+    ):not(:disabled):not([aria-disabled="true"]):hover {
+    box-shadow:
+      inset 0 0 0 1px var(--neon-blue),
+      0 0 0 1px var(--neon-blue),
+      0 0 17px var(--neon-halo) !important;
+  }
+}
+:is(button, a[href], [role="button"], [role="tab"]):not(:disabled):not(
+    [aria-disabled="true"]
+  ):active {
+  box-shadow:
+    inset 0 0 0 2px var(--neon-blue),
+    inset 0 2px 8px var(--neon-halo),
+    0 0 24px var(--neon-halo) !important;
+}
+.sheet-table :is(input, select):focus {
+  box-shadow:
+    inset 0 0 0 2px var(--neon-blue),
+    inset 0 0 12px var(--neon-halo) !important;
+}
+.neon-feedback {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  overflow: hidden;
+}
+.neon-ripple {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 2px solid var(--neon-blue);
+  box-shadow:
+    0 0 12px var(--neon-halo),
+    inset 0 0 12px var(--neon-halo);
+  animation: neon-click 0.65s ease-out forwards;
+}
+.neon-ripple::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid var(--neon-blue);
+  border-radius: 50%;
+  opacity: 0.65;
+}
+/* A different toy for each section. The old crystal becomes a small companion. */
+.crystal-float {
+  left: auto;
+  right: 0;
+  top: 128px;
+  width: 45px;
+  height: 72px;
+  margin: 0;
+}
+.crystal-cube-float {
+  left: 23px;
+  right: auto;
+  bottom: 3px;
+}
+.crystal-mini-first {
+  left: 0;
+  bottom: 40px;
+}
+.crystal-mini-second {
+  right: 0;
+  top: 1px;
+}
+.fun-object {
+  position: absolute;
+  width: 154px;
+  height: 200px;
+  left: 50%;
+  top: 14px;
+  margin-left: -77px;
+  filter: drop-shadow(7px 12px 10px var(--mirror-shadow));
+  animation: object-bob 9s ease-in-out infinite;
+}
+.fun-object svg {
+  width: 23px;
+  height: 23px;
+  stroke-width: 2;
+}
+.object-star {
+  position: absolute;
+  color: var(--object-rose);
+  filter: drop-shadow(0 0 6px var(--object-highlight));
+}
+.object-star-a {
+  top: 13px;
+  right: -1px;
+  transform: rotate(12deg);
+}
+.object-star-b {
+  bottom: 10px;
+  left: 4px;
+  color: var(--object-blue);
+}
+.object-star svg {
+  fill: currentColor;
+  stroke: var(--object-highlight);
+  stroke-width: 1;
+}
+/* Glass hourglass */
+.hourglass-vessel {
+  position: absolute;
+  width: 116px;
+  height: 164px;
+  top: 19px;
+  left: 19px;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    86% 25%,
+    59% 50%,
+    86% 75%,
+    100% 100%,
+    0 100%,
+    14% 75%,
+    41% 50%,
+    14% 25%
+  );
+  background: linear-gradient(
+    95deg,
+    var(--object-highlight),
+    color-mix(in srgb, var(--object-blue) 65%, transparent) 23%,
+    color-mix(in srgb, var(--object-violet) 35%, transparent) 50%,
+    var(--object-highlight) 85%
+  );
+  box-shadow:
+    inset 10px 0 14px var(--object-highlight),
+    inset -5px 0 10px var(--object-blue);
+}
+.hourglass-cap {
+  position: absolute;
+  left: 13px;
+  width: 128px;
+  height: 29px;
+  border: 2px solid var(--object-highlight);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    var(--object-highlight),
+    var(--object-rose) 50%,
+    var(--object-violet) 80%
+  );
+  box-shadow:
+    0 5px 0 var(--object-violet),
+    0 7px 8px var(--mirror-shadow),
+    inset 0 1px 5px var(--object-highlight);
+}
+.cap-top {
+  top: 5px;
+}
+.cap-bottom {
+  bottom: 7px;
+}
+.hourglass-sand {
+  position: absolute;
+  background: linear-gradient(
+    140deg,
+    var(--object-blue),
+    var(--object-highlight),
+    var(--object-rose)
+  );
+  opacity: 0.9;
+}
+.sand-top {
+  left: 40px;
+  top: 51px;
+  width: 74px;
+  height: 41px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.sand-bottom {
+  left: 35px;
+  bottom: 24px;
+  width: 86px;
+  height: 43px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.hourglass-drop {
+  position: absolute;
+  left: 74px;
+  top: 94px;
+  width: 6px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--neon-blue);
+  box-shadow: 0 0 8px var(--neon-halo);
+  animation: sand-drop 2.7s ease-in infinite;
+}
+.hourglass-check {
+  position: absolute;
+  left: 53px;
+  bottom: 43px;
+  padding: 5px;
+  border: 1px solid var(--object-highlight);
+  border-radius: 10px;
+  background: var(--object-blue);
+  color: var(--object-ink);
+  transform: rotate(-14deg);
+  box-shadow: 2px 3px 0 var(--object-violet);
+}
+/* Opportunity rocket */
+.rocket-flight {
+  position: absolute;
+  width: 62px;
+  height: 155px;
+  top: 8px;
+  left: 50px;
+  transform: rotate(30deg);
+}
+.rocket-body {
+  position: absolute;
+  left: 10px;
+  top: 0;
+  width: 44px;
+  height: 104px;
+  border-radius: 60% 60% 32% 32%;
+  background: linear-gradient(
+    95deg,
+    var(--object-violet),
+    var(--object-highlight) 40%,
+    var(--object-rose) 75%
+  );
+  border: 2px solid var(--object-highlight);
+  box-shadow: inset -6px -3px 9px var(--object-violet);
+}
+.rocket-window {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  top: 33px;
+  left: 6px;
+  border: 4px solid var(--object-blue);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 24%,
+    var(--object-highlight),
+    var(--object-violet) 45%,
+    var(--object-ink)
+  );
+  box-shadow: 1px 2px 0 var(--object-violet);
+}
+.rocket-fin {
+  position: absolute;
+  width: 28px;
+  height: 46px;
+  top: 65px;
+  background: linear-gradient(130deg, var(--object-blue), var(--object-violet));
+  border-radius: 16px;
+}
+.fin-left {
+  left: -7px;
+  transform: rotate(25deg);
+}
+.fin-right {
+  right: -5px;
+  transform: rotate(-25deg);
+}
+.rocket-flame {
+  position: absolute;
+  width: 32px;
+  height: 66px;
+  top: 89px;
+  left: 17px;
+  border-radius: 10% 10% 60% 60%;
+  background: linear-gradient(
+    var(--object-highlight),
+    var(--object-blue),
+    transparent
+  );
+  animation: rocket-flare 3s ease-in-out infinite;
+}
+/* Application pipeline */
+.glass-pipe {
+  position: absolute;
+  width: 108px;
+  height: 76px;
+  border: 13px solid color-mix(in srgb, var(--object-blue) 65%, transparent);
+  border-radius: 46px;
+  box-shadow:
+    inset 0 0 0 2px var(--object-highlight),
+    0 0 0 2px var(--object-highlight),
+    inset 1px 3px 8px var(--object-violet),
+    0 4px 9px var(--mirror-shadow);
+  transform: rotate(-20deg);
+}
+.pipe-a {
+  left: 0;
+  top: 10px;
+}
+.pipe-b {
+  right: 0;
+  top: 69px;
+  transform: rotate(20deg);
+  border-color: color-mix(in srgb, var(--object-rose) 75%, transparent);
+}
+.pipe-c {
+  left: 0;
+  top: 126px;
+}
+.pipe-node {
+  position: absolute;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 25%,
+    var(--object-highlight),
+    var(--object-blue)
+  );
+  border: 2px solid var(--object-highlight);
+  box-shadow: 0 0 14px var(--neon-halo);
+  animation: node-pulse 5s ease-in-out infinite;
+}
+.node-a {
+  top: 19px;
+  left: 42px;
+}
+.node-b {
+  top: 125px;
+  right: 35px;
+  animation-delay: -2s;
+}
+.node-c {
+  top: 145px;
+  left: 6px;
+  animation-delay: -3.5s;
+}
+/* Projects and task treasure chest */
+.treasure-box {
+  position: absolute;
+  left: 4px;
+  bottom: 14px;
+  width: 146px;
+  height: 75px;
+  border-radius: 11px 11px 19px 19px;
+  transform: rotate(-8deg) skewY(6deg);
+  background: linear-gradient(
+    105deg,
+    var(--object-blue),
+    var(--object-highlight) 34%,
+    var(--object-rose) 52%,
+    var(--object-violet)
+  );
+  border: 3px solid var(--object-highlight);
+  box-shadow:
+    inset 0 -11px 0 var(--object-violet),
+    4px 7px 0 color-mix(in srgb, var(--object-violet) 80%, transparent);
+}
+.treasure-lock {
+  position: absolute;
+  width: 23px;
+  height: 28px;
+  left: 59px;
+  top: 11px;
+  background: linear-gradient(var(--object-highlight), var(--object-rose));
+  border: 2px solid var(--object-highlight);
+  border-radius: 4px;
+  box-shadow: 2px 3px 0 var(--object-violet);
+}
+.treasure-lock::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 9px;
+  left: 7px;
+  top: 7px;
+  border-radius: 3px;
+  background: var(--object-violet);
+}
+.treasure-lid {
+  position: absolute;
+  top: 44px;
+  left: 6px;
+  width: 143px;
+  height: 66px;
+  border: 3px solid var(--object-highlight);
+  border-radius: 30px 30px 8px 8px;
+  background: linear-gradient(
+    110deg,
+    var(--object-blue),
+    var(--object-rose),
+    var(--object-violet)
+  );
+  transform: perspective(220px) rotateX(-40deg) rotate(-9deg);
+  box-shadow: inset 0 0 0 8px
+    color-mix(in srgb, var(--object-highlight) 45%, transparent);
+}
+.treasure-mouth {
+  position: absolute;
+  width: 127px;
+  height: 35px;
+  left: 14px;
+  top: 99px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    var(--object-violet),
+    var(--object-highlight)
+  );
+  transform: rotate(-8deg);
+}
+.treasure-token {
+  position: absolute;
+  padding: 9px;
+  border: 1px solid var(--object-highlight);
+  border-radius: 12px;
+  color: var(--object-ink);
+  box-shadow:
+    inset 1px 2px 1px var(--object-highlight),
+    3px 4px 0 var(--object-violet);
+  animation: token-rise 7s ease-in-out infinite;
+}
+.token-check {
+  top: 14px;
+  left: 58px;
+  background: var(--object-blue);
+  transform: rotate(14deg);
+}
+.token-star {
+  top: 56px;
+  left: 9px;
+  background: var(--object-rose);
+  transform: rotate(-15deg);
+  animation-delay: -2s;
+}
+.token-spark {
+  top: 67px;
+  right: 0;
+  background: var(--object-highlight);
+  transform: rotate(18deg);
+  animation-delay: -4s;
+}
+/* Calendar wheel */
+.fun-wheel {
+  width: 170px;
+  height: 170px;
+  margin-left: -85px;
+  top: 33px;
+}
+.wheel-spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 8px solid var(--object-highlight);
+  box-shadow:
+    0 0 0 5px var(--object-violet),
+    0 0 18px var(--neon-halo),
+    inset 0 0 15px var(--neon-halo);
+  animation: wheel-orbit 36s linear infinite;
+}
+.wheel-rim {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--object-blue),
+    var(--object-rose),
+    var(--object-highlight),
+    var(--object-violet),
+    var(--object-blue)
+  );
+  mask: radial-gradient(transparent 56%, #000 57%);
+}
+.wheel-spoke {
+  position: absolute;
+  width: 6px;
+  height: 60px;
+  bottom: 50%;
+  left: calc(50% - 3px);
+  transform-origin: 50% 100%;
+  border-radius: 6px;
+  background: linear-gradient(var(--object-highlight), var(--object-violet));
+}
+.wheel-hub {
+  position: absolute;
+  top: 56px;
+  left: 56px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 25% 25%,
+    var(--object-highlight),
+    var(--object-blue),
+    var(--object-violet)
+  );
+  border: 3px solid var(--object-highlight);
+  box-shadow: 0 3px 4px var(--mirror-shadow);
+}
+.wheel-hub i,
+.wheel-hub b {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  width: 3px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--object-ink);
+  transform-origin: 50% 100%;
+}
+.wheel-hub b {
+  height: 15px;
+  transform: rotate(110deg);
+}
+/* Contact cloud and resource books */
+.cloud-ball {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 28% 20%,
+    var(--object-highlight),
+    var(--object-rose) 42%,
+    var(--object-blue) 76%,
+    var(--object-violet)
+  );
+  box-shadow: inset -7px -8px 12px
+    color-mix(in srgb, var(--object-violet) 55%, transparent);
+}
+.cloud-left {
+  width: 80px;
+  height: 80px;
+  left: 0;
+  top: 75px;
+}
+.cloud-right {
+  width: 83px;
+  height: 83px;
+  right: 0;
+  top: 75px;
+}
+.cloud-top {
+  width: 100px;
+  height: 100px;
+  left: 24px;
+  top: 38px;
+}
+.cloud-base {
+  width: 132px;
+  height: 61px;
+  left: 10px;
+  top: 114px;
+  border-radius: 32px;
+}
+.cloud-satellite {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--object-highlight);
+  border-radius: 50%;
+  background: var(--object-blue);
+  box-shadow: 0 0 12px var(--neon-halo);
+}
+.satellite-a {
+  left: 4px;
+  top: 18px;
+}
+.satellite-b {
+  right: 8px;
+  bottom: 0;
+  background: var(--object-rose);
+}
+.floating-book {
+  position: absolute;
+  width: 100px;
+  height: 130px;
+  border-radius: 5px 17px 17px 5px;
+  border: 2px solid var(--object-highlight);
+  border-left: 12px solid var(--object-violet);
+  background: linear-gradient(
+    130deg,
+    var(--object-highlight),
+    var(--object-rose),
+    var(--object-violet)
+  );
+  box-shadow:
+    4px 5px 0 var(--object-highlight),
+    8px 9px 0 var(--object-violet);
+}
+.floating-book svg {
+  position: absolute;
+  left: 18px;
+  top: 35px;
+  width: 39px;
+  height: 39px;
+  color: var(--object-ink);
+}
+.book-back {
+  left: 39px;
+  top: 10px;
+  transform: rotate(17deg);
+  background: linear-gradient(
+    130deg,
+    var(--object-highlight),
+    var(--object-blue)
+  );
+}
+.book-front {
+  left: 7px;
+  top: 56px;
+  transform: rotate(-14deg);
+}
+@keyframes liquid-wander {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  50% {
+    translate: -35px 35px;
+    rotate: 9deg;
+  }
+}
+@keyframes neon-click {
+  from {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+@keyframes object-bob {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: -3deg;
+  }
+  50% {
+    translate: 0 -8px;
+    rotate: 3deg;
+  }
+}
+@keyframes sand-drop {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  90%,
+  100% {
+    translate: 0 41px;
+    opacity: 0;
+  }
+}
+@keyframes rocket-flare {
+  0%,
+  100% {
+    scale: 1 0.82;
+    opacity: 0.65;
+  }
+  50% {
+    scale: 1 1.05;
+    opacity: 1;
+  }
+}
+@keyframes node-pulse {
+  0%,
+  100% {
+    scale: 0.9;
+    opacity: 0.7;
+  }
+  50% {
+    scale: 1.08;
+    opacity: 1;
+  }
+}
+@keyframes token-rise {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -9px;
+  }
+}
+@keyframes wheel-orbit {
+  from {
+    rotate: 0deg;
+  }
+  to {
+    rotate: 360deg;
+  }
+}
+html[data-motion="off"] :is(.liquid-backdrop, .crystal-scene) * {
+  animation-play-state: paused;
+}
+html[data-motion="off"] .neon-feedback {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .liquid-backdrop *,
+  .crystal-scene * {
+    animation: none !important;
+  }
+  .neon-feedback {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .crystal-mini-first {
+    left: -5px;
+    bottom: 30px;
+  }
+  .crystal-mini-second {
+    right: -4px;
+  }
+  .crystal-cube-float {
+    left: 12px;
+    bottom: 0;
+  }
+  .crystal-float {
+    right: 0;
+    top: 145px;
+  }
+}
+@media (max-width: 600px) {
+  .liquid-ribbon {
+    width: 600px;
+    height: 460px;
+    opacity: 0.4;
+    animation-duration: 48s;
+  }
+  .ribbon-rose {
+    right: -260px;
+    top: -100px;
+  }
+  .ribbon-pearl {
+    left: -300px;
+    top: 700px;
+  }
+  .ribbon-violet {
+    right: -300px;
+    top: 1400px;
+  }
+  .fun-object {
+    scale: 0.73;
+    transform-origin: 50% 0;
+    top: 8px;
+  }
+  .fun-wheel {
+    top: 19px;
+  }
+  .crystal-float {
+    width: 34px;
+    height: 53px;
+    right: 10px;
+    top: 98px;
+  }
+  .crystal-cube-float {
+    left: 28px;
+    right: auto;
+    bottom: 0;
+    scale: 0.8;
+  }
+  .crystal-mini-first {
+    left: 3%;
+    bottom: 36px;
+  }
+  .crystal-mini-second {
+    right: 3%;
+    top: 0;
+  }
+  .crystal-heading .eyebrow {
+    padding: 6px 10px;
+    letter-spacing: 0.4px;
+  }
+}
