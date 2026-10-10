@@ -35,10 +35,18 @@ npm run build
 | `src/lib/backend.ts`     | Google sign-in and Supabase CRUD requests                      |
 | `src/lib/records.ts`     | Record fields, validation and deadline timezone handling       |
 | `src/styles.css`         | Layout, colours and responsive styling                         |
+| `src/CrystalScene.tsx`   | Decorative crystals, page icons and the motion switch           |
+| `src/crystal.css`        | Glass surfaces, colourful accents and CSS sculptures             |
 | `supabase/schema.sql`    | Database table, account privacy policies and timestamps        |
 | `tests/privacy.test.mjs` | Runs the database policies against a local PostgreSQL engine   |
 
 Edit the title in `index.html` and the credit in `src/Workspace.tsx` to change branding.
+
+## Crystal appearance and motion
+
+The page header combines faceted crystals, a rotating CSS cube and floating cards whose icons match the current section. Glass surfaces and colourful dashboard tiles work in both light and dark modes. Editable sheet cells stay opaque; green completed tasks and red overdue tasks retain their meaning.
+
+Use **Motion on / Motion off** beside **Add new** to pause or resume decorative animations. The choice stays on this device and syncs across its open tabs. A device's reduced-motion accessibility setting always disables the animations. Artwork is CSS rather than a 3D engine: it makes no network requests, has no mouse tracking and does not change your records. Edit the colour variables at the top of `src/crystal.css` to customise the palette; the animation and mobile rules are at the bottom.
 
 ## Practical limits
 

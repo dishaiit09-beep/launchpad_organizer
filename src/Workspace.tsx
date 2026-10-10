@@ -1,4 +1,5 @@
 import { ThemeToggle } from "./ThemeToggle";
+import { CrystalScene, MotionToggle } from "./CrystalScene";
 import { DeadlineReminders } from "./DeadlineReminders";
 ("use client");
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1064,8 +1065,8 @@ export default function Workspace({
               pending={pending}
             />
           )}
-          <div className="page-heading">
-            <div>
+          <div className="page-heading crystal-heading" data-scene={view}>
+            <div className="crystal-heading-copy">
               <div className="eyebrow">
                 {new Intl.DateTimeFormat("en-IN", {
                   timeZone: zone,
@@ -1084,22 +1085,26 @@ export default function Workspace({
                   ? `${searchResults.length} matching entries`
                   : viewCopy[view].subtitle}
               </p>
+              <div className="crystal-heading-actions">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="add-button" disabled={signedOut}>
+                      <Plus size={18} />
+                      Add new
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {kinds.map((kind) => (
+                      <DropdownMenuItem key={kind} onSelect={() => add(kind)}>
+                        Add {kindLabels[kind]}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <MotionToggle />
+              </div>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="add-button" disabled={signedOut}>
-                  <Plus size={18} />
-                  Add new
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {kinds.map((kind) => (
-                  <DropdownMenuItem key={kind} onSelect={() => add(kind)}>
-                    Add {kindLabels[kind]}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <CrystalScene view={view} />
           </div>
           {user && !loading && !loadError && (
             <>
